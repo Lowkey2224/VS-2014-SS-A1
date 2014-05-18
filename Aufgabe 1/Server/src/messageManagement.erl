@@ -43,7 +43,7 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber) ->
   receive
     kill -> true;
 
-    {getmessages, PID} ->
+    {query_messages, PID} ->
       logging(Logfile, io_lib:format("~p received get request from ~p \n", [werkzeug:timeMilliSecond(), PID])),
       clientManagement:sendMessageToClient(PID, ConfigDict, DLQ),
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber);

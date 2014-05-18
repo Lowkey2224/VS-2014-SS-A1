@@ -104,7 +104,7 @@ communicationLoop(ConfigDict, MsgId) ->
       communicationLoop(ConfigDict, MsgId);
     {new_message, {Message, Number}} -> queueManagement:queueService(new_message, {Message, Number}, ConfigDict),
       communicationLoop(ConfigDict, MsgId);
-    {query_msgid, PID} -> NewMsgId = msgidManagement:sendmsgid(PID, MsgId),
+    {query_msgid, PID} -> NewMsgId = queueManagement:queueService(query_msgid, PID, MsgId),
       communicationLoop(ConfigDict, NewMsgId);
     Any -> logging(Logfile, io_lib:format("~p received unknown command: ~p\n", [timeMilliSecond(), Any])),
       communicationLoop(ConfigDict, MsgId)
