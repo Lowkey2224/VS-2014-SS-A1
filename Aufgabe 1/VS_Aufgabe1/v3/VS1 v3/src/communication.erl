@@ -96,16 +96,16 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
   Logfile = dict:fetch(logfile, ConfigDict),
   receive
     kill -> true;
-    {getmessages, PID} -> sendMessageToClient(PID, ConfigDict),
+    {query_messages, PID} -> sendMessageToClient(PID, ConfigDict),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {dropmessage, {Message, Number}} ->
-      queueManagement:queueService(dropmessage, {Message, Number}, ConfigDict, self()),
+    {{new_message, {Message, Number}} ->
+      queueManagement:queueService({new_message, {Message, Number}, ConfigDict, self()),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {getmsgid, PID} -> NewMsgId = msgidManagement:sendmsgid(PID, MsgId),
+    {query_msgid, PID} -> NewMsgId = msgidManagement:sendmsgid(PID, MsgId),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, NewMsgId, Timer);
     Any -> logging(Logfile, io_lib:format("~p Unbekannte Anforderung erhalten: ~p\n", [timeMilliSecond(), Any])),

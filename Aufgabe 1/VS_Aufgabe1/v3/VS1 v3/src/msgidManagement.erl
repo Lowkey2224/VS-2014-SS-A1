@@ -23,7 +23,7 @@
 % @return neue Nachrichten id                                        %
 %--------------------------------------------------------------------%
 sendmsgid(PID, Id) ->
-  Message = {nid, Id},
+  Message = {msgid, Id},
   communication:sendMessage(PID, Message),
   logging(?LOGFILE, io_lib:format("~p sende neue MessageId ~p an ~p\n", [timeMilliSecond(), Id, PID])),
   Id+1
