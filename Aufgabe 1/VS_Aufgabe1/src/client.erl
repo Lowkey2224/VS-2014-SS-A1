@@ -24,7 +24,7 @@ clientStart(Host, Address, Config, Number) ->
   {ok, Server} = werkzeug:get_config_value(servername, Config),
   timer:exit_after(Lifetime * 1000, self(), timeout),
   Pid = {Server, list_to_atom(lists:concat([Host, "@", Address]))},
-  Text = lists:concat(["Gestartet: ",werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204 Startzeit: ", werkzeug:timeMilliSecond(), "\n"]),
+  Text = lists:concat(["Gestartet: ",werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-030X Startzeit: ", werkzeug:timeMilliSecond(), "\n"]),
 
   LogFile = lists:concat(["client_", Number, werkzeug:to_String(node()), ".log"]),
   werkzeug:logging(LogFile, Text),
@@ -41,7 +41,7 @@ loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
     Pid ! {query_mesgid, self()},
     receive {msgid, MsgId} ->
 
-      Log = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204 MsgId: ", MsgId, " von: ", werkzeug:to_String(Pid), " erhalten um: ", werkzeug:timeMilliSecond(), "\n"]),
+      Log = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-030X MsgId: ", MsgId, " von: ", werkzeug:to_String(Pid), " erhalten um: ", werkzeug:timeMilliSecond(), "\n"]),
       werkzeug:logging(LogFile, Log),
       Time = if ToSend =< 1 -> changeTimeInterval(TimeInterval, LogFile);
         ToSend > 1 -> TimeInterval
@@ -52,7 +52,7 @@ loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
         Msg = generateMessage([Number,werkzeug:to_String(node())],MsgId ),
         newMessage(Pid, Msg, MsgId, LogFile);
       ToSend =< 1 ->
-          Msg = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204: ", MsgId, "te_Nachricht um ", werkzeug:timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
+          Msg = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-030X: ", MsgId, "te_Nachricht um ", werkzeug:timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
           werkzeug:logging(LogFile, Msg)
       end,
       loop(Pid, Number, LogFile, Time, ToSend - 1);
@@ -60,7 +60,7 @@ loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
     Any -> werkzeug:logging(LogFile,io_lib:format("Unbekanntes Antwortformat:~p\n", [Any]))
     end;
   %Leser, alle Nachrichten werden geholt
-  ToSend =:= 0 ->  getMessages(Pid, Number, LogFile, TimeInterval)
+  ToSend =:= 0 ->  queryMessages(Pid, Number, LogFile, TimeInterval)
   end.
 
 %-------------------------------------------------------------------------------------%
@@ -76,14 +76,14 @@ newMessage(Pid, Msg, MsgId, LogFile) ->
 % der Praktikumsgruppe/Teamnummer, der MsgId und der Zeit @return Nachricht           %
 %-------------------------------------------------------------------------------------%
 generateMessage(Client, MsgId) ->
-  lists:concat([werkzeug:to_String(Client), "-0204-", werkzeug:to_String(self()),"-",
+  lists:concat([werkzeug:to_String(Client), "-030X-", werkzeug:to_String(self()),"-",
     werkzeug:to_String(MsgId),"te Nachricht" "-Sendezeit:",werkzeug:timeMilliSecond()]).
 
 %-------------------------------------------------------------------------------------%
 % Holt alle Nachrichten vom Server und fügt an vom eigenen Redakteur gesendete        %
 % Nachricht "Nachricht vom eigenen Redakteur" an und loggt die Nachrichten            %
 % %-----------------------------------------------------------------------------------%
-getMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
+queryMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
   Pid ! {query_messages, self()},
   receive {message, MsgId, Message, Terminated} ->
     IsOwn = isOwnMessage(Message, ClientNumber, LogFile),
