@@ -44,15 +44,15 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber) ->
     kill -> true;
 
     {query_messages, PID} ->
-      logging(Logfile, io_lib:format("~p received get request from ~p \n", [werkzeug:timeMilliSecond(), PID])),
+      logging(Logfile, io_lib:format("~p received query request from ~p \n", [werkzeug:timeMilliSecond(), PID])),
       communication:sendMessageToClient(PID, ConfigDict, DLQ),
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber);
 
-    {dropmessage, {Message, Number}} ->
+    {new_message, {Message, Number}} ->
 %% TODO: Check if number and string
       NewMessage = Message ++ "; HBQ In: " ++ timeMilliSecond(),
       NewHBQ = pushSL(HBQ, {Number, NewMessage}),
-      logging(Logfile, io_lib:format("~p received drop request, Message: ~p, Number: ~p, HBQ: ~p \n", [timeMilliSecond(), Message, Number, NewHBQ])),
+      logging(Logfile, io_lib:format("~p received new_message request, Message: ~p, Number: ~p, HBQ: ~p \n", [timeMilliSecond(), Message, Number, NewHBQ])),
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
