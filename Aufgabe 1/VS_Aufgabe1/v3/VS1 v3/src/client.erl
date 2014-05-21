@@ -38,7 +38,7 @@ clientStart(Host, Address, Config, Number) ->
 loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
   if ToSend > 0 ->
     %Redakteur, Ids werden geholt und Nachrichten gesendet
-    Pid ! {query_mesgid, self()},
+    Pid ! {query_msgid, self()},
     receive {msgid, MsgId} ->
 
       Log = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0204 MsgId: ", MsgId, " von: ", to_String(Pid), " erhalten um: ", timeMilliSecond(), "\n"]),
