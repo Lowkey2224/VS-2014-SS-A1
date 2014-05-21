@@ -60,7 +60,7 @@ queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication) ->
           queueServiceLoop(ConfigDict, NewHBQ, DLQ, LastDLQMsgNumber, Communication)
       end;
     % message mit der msgid Number wird gelesen
-    {query_message, {Number}} ->
+    {query_msgid, {Number}} ->
         NextMsgId = getNextMessageId(DLQ, Number),
 
         if NextMsgId =/= -1 ->
