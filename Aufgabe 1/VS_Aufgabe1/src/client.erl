@@ -1,11 +1,11 @@
 %%%-------------------------------------------------------------------
-%%% @author Leon
-%%% @author Erwin
-%%% @copyright (C) 2013, <COMPANY>
+%%% @author loki
+%%% @author marilena
+%%% @copyright (C) 2014, <COMPANY>
 %%% @doc
 %%%
 %%% @end
-%%% Created : 19. Okt 2013 14:56
+%%% Created : 15. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(client).
 -import(werkzeug, [get_config_value/2, logging/2, logstop/0, timeMilliSecond/0, to_String/1]).

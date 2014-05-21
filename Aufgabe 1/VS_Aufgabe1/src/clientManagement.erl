@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
-%%% @author Leon
-%%% @author Erwin Lang
+%%% @author loki
+%%% @author marilena
 %%% @copyright (C) 2013, <COMPANY>
 %%% @doc
 %%%
@@ -8,8 +8,8 @@
 %%% Created : 09. Okt 2013 17:16
 %%%-------------------------------------------------------------------
 -module(clientManagement).
--author("Leon Fausten").
--author("Erwin Lang").
+-author("loki").
+-author("marilena").
 
 %% API
 -export([start/2, stop/0]).
