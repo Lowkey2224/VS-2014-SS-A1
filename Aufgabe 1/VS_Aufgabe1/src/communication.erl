@@ -70,7 +70,7 @@ initServer(ConfigDict) ->
 
 %----------------------------------------------------------%
 % Beendet den Server und falls gestartet auch die Prozesse %
-% zur queue und Client verwaltung                          %
+% zur Message und Client verwaltung                          %
 %----------------------------------------------------------%
 stopServer() ->
   {ok, ConfigList} = file:consult(?CONFIGFILE),
@@ -96,7 +96,8 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
   Logfile = dict:fetch(logfile, ConfigDict),
   receive
     kill -> true;
-    {getmessages, PID} -> sendMessageToClient(PID, ConfigDict),
+    {getmessages, PID} -> 
+      sendMessageToClient(PID, ConfigDict),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
@@ -105,7 +106,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {getmsgid, PID} -> NewMsgId = msgidManagement:sendmsgid(PID, MsgId),
+    {getmsgid, PID} -> NewMsgId = messageManagement:messageService(PID, MsgId),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, NewMsgId, Timer);
     Any -> logging(Logfile, io_lib:format("~p Unbekannte Anforderung erhalten: ~p\n", [timeMilliSecond(), Any])),
@@ -115,7 +116,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 
 .
 %-------------------------------------------------------------------------------------------%
-% Neu eingefügt zur Entkopplung: Verwendet das queuemanagement und clientmanagement um eine %
+% Neu eingefügt zur Entkopplung: Verwendet das messagemanagement und clientmanagement um eine %
 % Nachricht an den Client PID zu senden                                                     %
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->

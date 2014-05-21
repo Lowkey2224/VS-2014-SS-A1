@@ -29,7 +29,7 @@ start(ConfigDict, CommunicationProzessName) ->
     undefined ->
       PIDclientservice = erlang:spawn(fun() -> clientManagerloop([], ConfigDict, CommunicationProzessName) end),
       erlang:register(?CLIENTPROCESSNAME, PIDclientservice),
-      logging(Logfile, io_lib:format("~p Client service erfolgreich gestartet mit PID: ~p\n", [timeMilliSecond(), PIDclientservice]));
+      werkzeug:logging(Logfile, io_lib:format("~p Client service erfolgreich gestartet mit PID: ~p\n", [werkzeug:timeMilliSecond(), PIDclientservice]));
     _NotUndef -> ok
   end,
   {ok, ?CLIENTPROCESSNAME}
@@ -70,7 +70,7 @@ clientManagerloop(ClientList, ConfigDict, Communication) ->
 
 
     Any ->
-      logging(Logfile, io_lib:format("~p Client Management: Unbekante Nachricht eingetroffen: ~p \n", [timeMilliSecond(), Any]))
+      werkzeug:logging(Logfile, io_lib:format("~p Client Management: Unbekante Nachricht eingetroffen: ~p \n", [werkzeug:timeMilliSecond(), Any]))
 
   end
 .
@@ -82,7 +82,7 @@ removeClient(ClientPID, ConfigDict, ClientList) ->
   Logfile = dict:fetch(logfile, ConfigDict),
   Client = lists:keyfind(ClientPID, 1, ClientList),
   NewClientList = lists:delete(Client, ClientList),
-  logging(Logfile, io_lib:format("Client gelöscht ~p \n", [ClientPID])),
+  werkzeug:logging(Logfile, io_lib:format("Client gelöscht ~p \n", [ClientPID])),
   NewClientList
 .
 
@@ -102,7 +102,7 @@ updateOrCreateClient(ClientPID, LastMessageID, ConfigDict, ClientList) ->
   end,
   NewClient = {ClientPID, LastMessageID, Timer},
   NewClientList = lists:keystore(ClientPID, 1, ClientList, NewClient),        %create or replace client tuple in list
-  logging(Logfile, io_lib:format("ClientListe aktuallisiet, updated Client ~p \n", [ClientPID])),
+  werkzeug:logging(Logfile, io_lib:format("ClientListe aktuallisiet, updated Client ~p \n", [ClientPID])),
   NewClientList
 .
 

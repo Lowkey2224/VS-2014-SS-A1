@@ -66,6 +66,8 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber) ->
           msgServiceLoop(ConfigDict, NewHBQ, DLQ, LastDLQMsgNumber)
       end;
 
+    {query_msgid, Pid} ->
+
     Any ->
       logging(Logfile, io_lib:format("~p received unknown order: ~p\n", [timeMilliSecond(), Any])),
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber)
