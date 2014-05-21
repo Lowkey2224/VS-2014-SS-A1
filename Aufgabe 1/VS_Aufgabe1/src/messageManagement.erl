@@ -67,6 +67,7 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber) ->
       end;
 
     {query_msgid, Pid} ->
+	
 
     Any ->
       logging(Logfile, io_lib:format("~p received unknown order: ~p\n", [timeMilliSecond(), Any])),
@@ -170,9 +171,9 @@ getNextMessageId(DLQ, ActualNumber) ->
 % @return neue Nachrichten id                                        %
 %--------------------------------------------------------------------%
 sendmsgid(PID, Id) ->
-  Message = {nnr, Id},
+  Message = {nnr, Id, Logfile},
   communication:sendMessage(PID, Message),
-  werkzeug:logging(?LOGFILE, io_lib:format("~p send new message id ~p to ~p", [werkzeug:timeMilliSecond(), Id, PID])),
+  werkzeug:logging(Logfile, io_lib:format("~p send new message id ~p to ~p", [werkzeug:timeMilliSecond(), Id, PID])),
   Id+1
 .
 
