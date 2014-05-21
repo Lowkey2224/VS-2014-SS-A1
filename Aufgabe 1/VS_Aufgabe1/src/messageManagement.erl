@@ -61,16 +61,9 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId);
 
     {new_message, {Message, Number}} ->
-<<<<<<< HEAD
-%% TODO: Check if number and string
-      NewMessage = Message ++ "; HBQ In: " ++ timeMilliSecond(),
-      NewHBQ = pushSL(HBQ, {Number, NewMessage}),
-      logging(Logfile, io_lib:format("~p received new_message request, Message: ~p, Number: ~p, HBQ: ~p \n", [timeMilliSecond(), Message, Number, NewHBQ])),
-=======
       NewMessage = Message ++ "; HBQ In: " ++ werkzeug:timeMilliSecond(),
       NewHBQ = werkzeug:pushSL(HBQ, {Number, NewMessage}),
       werkzeug:logging(Logfile, io_lib:format("~p received drop request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
->>>>>>> 73916d5bbde46392ec5d77126179a919fc76c734
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
