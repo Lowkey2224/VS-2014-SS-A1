@@ -64,7 +64,8 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
 
       NewMessage = Message ++ "; HBQ In: " ++ werkzeug:timeMilliSecond(),
       NewHBQ = werkzeug:pushSL(HBQ, {Number, NewMessage}),
-      werkzeug:logging(Logfile, io_lib:format("~p received new request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
+      werkzeug:logging(Logfile, io_lib:format("~p received drop request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
+
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
