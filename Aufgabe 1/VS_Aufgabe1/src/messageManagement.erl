@@ -13,6 +13,7 @@
 
 %% API
 -export([messageService/3,messageService/1, stop/1, getNextMessageId/2]).
+
 -import(werkzeug, [get_config_value/2, logging/2, logstop/0, timeMilliSecond/0, pushSL/2, findneSL/2, popSL/1, findSL/2, minNrSL/1, to_String/1, lengthSL/1]).
 
 %------------------------------------------------------------------%
@@ -26,7 +27,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
   Known = erlang:whereis(ServiceName),
   case Known of
     undefined ->
-      PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
+      PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], [], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
       logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
@@ -40,7 +41,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
   Known = erlang:whereis(ServiceName),
   case Known of
     undefined ->
-      PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
+      PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [],[], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
       logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
@@ -49,7 +50,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
 %-----------------------------------%
 % Hauptschleife des message Prozesses %
 %-----------------------------------%
-msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
+msgServiceLoop(ConfigDict, HBQ, DLQ, ClientList, LastDLQMsgNumber, MaxMsgId) ->
   Logfile = dict:fetch(logfile, ConfigDict),
   DLQLimit = dict:fetch(dlqlimit, ConfigDict),
   receive
@@ -57,8 +58,8 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
 
     {query_messages, PID} ->
       logging(Logfile, io_lib:format("~p received query request from ~p \n", [werkzeug:timeMilliSecond(), PID])),
-      sendMessageToClient(PID, ConfigDict, DLQ),
-      msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId);
+      sendMessageToClient(PID, ConfigDict, ClientList, DLQ),
+      msgServiceLoop(ConfigDict, HBQ, DLQ, ClientList, LastDLQMsgNumber, MaxMsgId);
 
     {new_message, {Message, Number}} ->
 
@@ -73,20 +74,20 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
 %%  In DLQ übertragen wenn  anz(HBQ)> Kap (DLQ)/2 ODER wenn keine Lücke zwischen Nachricht und DLQ vorhanden ist.
         ((HBQLength > HalfDLQCapacity) or (LastDLQMsgNumber + 1 =:= Number)) ->
           {NewHBQafterTransfer, NewDLQ, NewLastDLQMsgNumber} = transferToDLQ(NewHBQ, DLQ, LastDLQMsgNumber, ConfigDict),
-          msgServiceLoop(ConfigDict, NewHBQafterTransfer, NewDLQ, NewLastDLQMsgNumber, MaxMsgId);
+          msgServiceLoop(ConfigDict, NewHBQafterTransfer, NewDLQ, ClientList, NewLastDLQMsgNumber, MaxMsgId);
 %% Schwellwert nicht erreicht und Lücke vorhanden
         (HBQLength =< HalfDLQCapacity) ->
-          msgServiceLoop(ConfigDict, NewHBQ, DLQ, LastDLQMsgNumber, MaxMsgId)
+          msgServiceLoop(ConfigDict, NewHBQ, DLQ,ClientList,  LastDLQMsgNumber, MaxMsgId)
       end;
 
     {query_msgid, Pid} ->
 	Pid ! {msgid, MaxMsgId},
 	werkzeug:logging(Logfile, io_lib:format("~p send new message id ~p to ~p", [werkzeug:timeMilliSecond(), Id, PID])),
-	msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId+1);
+	msgServiceLoop(ConfigDict, HBQ, DLQ, ClientList, LastDLQMsgNumber, MaxMsgId+1);
 
     Any ->
       logging(Logfile, io_lib:format("~p received unknown order: ~p\n", [timeMilliSecond(), Any])),
-      msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId)
+      msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, ClientList, MaxMsgId)
   end
 .
 
@@ -186,23 +187,26 @@ getNextMessageId(DLQ, ActualNumber) ->
 % Neu eingefügt zur Entkopplung: Verwendet das messagemanagement und clientmanagement um eine %
 % Nachricht an den Client PID zu senden                                                     %
 %-------------------------------------------------------------------------------------------%
-sendMessageToClient(PID, ConfigDict) ->
+sendMessageToClient(PID, ConfigDict, Clientlist, DLQ) ->
   Logfile = dict:fetch(logfile, ConfigDict),
+  MsgId = clientManagement:getLastMsgid(PID, ClientList),
+  ActualId = getNextMessageId(DLQ MsgId),
+  Message = werkzeug:findSL(DLQ, ActualId),
 
-  logging(Logfile, io_lib:format("~p queryMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
-  {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
-  ClientManagement ! {get_last_msgid, PID},
-  receive
-    kill -> true;
-    {reply, last_msgid, LastMsgId} ->
-      messageManagement:messageService(query_messages, {LastMsgId} ,ConfigDict, self()),
-      receive
-        kill -> true;
-        {reply, nextmsg, Message} ->
-          sendMessage(PID, Message),
-          {message, NewMsgId, _, _} = Message,
-          logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
-          ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
-        end
-      end
+%   logging(Logfile, io_lib:format("~p queryMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
+%   {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
+%   ClientManagement ! {get_last_msgid, PID},
+%   receive
+%     kill -> true;
+%     {reply, last_msgid, LastMsgId} ->
+%       messageManagement:messageService(query_messages, {LastMsgId} ,ConfigDict, self()),
+%       receive
+%         kill -> true;
+%         {reply, nextmsg, Message} ->
+%           sendMessage(PID, Message),
+%           {message, NewMsgId, _, _} = Message,
+%           logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
+%           ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
+%         end
+%       end
   .

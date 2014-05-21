@@ -12,68 +12,69 @@
 -author("marilena").
 
 %% API
--export([start/2, stop/0]).
+% -export([start/2, stop/0]).
+-export([removeClient/3, updateOrCreateClient/4, getLastMsgid/2]).
 -import(werkzeug, [logging/2, timeMilliSecond/0, maxNrSL/1, findneSL/2, minNrSL/1]).
 
 -define(CLIENTPROCESSNAME, clientservice).
 -record(clients, {name = "", list = []}).
 
-%------------------------------------------------------------------%
-% Startet falls nicht schon geschehen den clientManagement Prozess %
-%------------------------------------------------------------------%
-start(ConfigDict, CommunicationProzessName) ->
-  Logfile = dict:fetch(logfile, ConfigDict),
-  Known = erlang:whereis(?CLIENTPROCESSNAME),
-  #clients{name = "clientlist", list = []},
-  case Known of
-    undefined ->
-      PIDclientservice = erlang:spawn(fun() -> clientManagerloop([], ConfigDict, CommunicationProzessName) end),
-      erlang:register(?CLIENTPROCESSNAME, PIDclientservice),
-      werkzeug:logging(Logfile, io_lib:format("~p Client service erfolgreich gestartet mit PID: ~p\n", [werkzeug:timeMilliSecond(), PIDclientservice]));
-    _NotUndef -> ok
-  end,
-  {ok, ?CLIENTPROCESSNAME}
-.
-
-
-%----------------------------%
-% Beendet den client Prozess %
-%----------------------------%
-stop() ->
-  Known = erlang:whereis(?CLIENTPROCESSNAME),
-  case Known of
-    undefined -> false;
-    _NotUndef -> ?CLIENTPROCESSNAME ! kill
-  end
-.
-
-%------------------------------------%
-% Hauptschleife des ClientManagement %
-%------------------------------------%
-clientManagerloop(ClientList, ConfigDict, Communication) ->
-  Logfile = dict:fetch(logfile, ConfigDict),
-  receive
-    kill -> true;
-
-    {get_last_msgid, PID} ->
-      LastMsgId = getLastMsgid(PID, ClientList),
-      Communication ! {reply, last_msgid, LastMsgId},
-      clientManagerloop(ClientList, ConfigDict, Communication);
-
-    {update_last_msgid_restart_timer, PID, ID} ->
-      NewClientList = updateOrCreateClient(PID, ID, ConfigDict, ClientList),
-      clientManagerloop(NewClientList, ConfigDict, Communication);
-
-    {remove_client, PID} ->
-      NewClientList = removeClient(PID, ConfigDict, ClientList),
-      clientManagerloop(NewClientList, ConfigDict, Communication);
-
-
-    Any ->
-      werkzeug:logging(Logfile, io_lib:format("~p Client Management: Unbekante Nachricht eingetroffen: ~p \n", [werkzeug:timeMilliSecond(), Any]))
-
-  end
-.
+% %------------------------------------------------------------------%
+% % Startet falls nicht schon geschehen den clientManagement Prozess %
+% %------------------------------------------------------------------%
+% start(ConfigDict, CommunicationProzessName) ->
+%   Logfile = dict:fetch(logfile, ConfigDict),
+%   Known = erlang:whereis(?CLIENTPROCESSNAME),
+%   #clients{name = "clientlist", list = []},
+%   case Known of
+%     undefined ->
+%       PIDclientservice = erlang:spawn(fun() -> clientManagerloop([], ConfigDict, CommunicationProzessName) end),
+%       erlang:register(?CLIENTPROCESSNAME, PIDclientservice),
+%       werkzeug:logging(Logfile, io_lib:format("~p Client service erfolgreich gestartet mit PID: ~p\n", [werkzeug:timeMilliSecond(), PIDclientservice]));
+%     _NotUndef -> ok
+%   end,
+%   {ok, ?CLIENTPROCESSNAME}
+% .
+% 
+% 
+% %----------------------------%
+% % Beendet den client Prozess %
+% %----------------------------%
+% stop() ->
+%   Known = erlang:whereis(?CLIENTPROCESSNAME),
+%   case Known of
+%     undefined -> false;
+%     _NotUndef -> ?CLIENTPROCESSNAME ! kill
+%   end
+% .
+% 
+% %------------------------------------%
+% % Hauptschleife des ClientManagement %
+% %------------------------------------%
+% clientManagerloop(ClientList, ConfigDict, Communication) ->
+%   Logfile = dict:fetch(logfile, ConfigDict),
+%   receive
+%     kill -> true;
+% 
+%     {get_last_msgid, PID} ->
+%       LastMsgId = getLastMsgid(PID, ClientList),
+%       Communication ! {reply, last_msgid, LastMsgId},
+%       clientManagerloop(ClientList, ConfigDict, Communication);
+% 
+%     {update_last_msgid_restart_timer, PID, ID} ->
+%       NewClientList = updateOrCreateClient(PID, ID, ConfigDict, ClientList),
+%       clientManagerloop(NewClientList, ConfigDict, Communication);
+% 
+%     {remove_client, PID} ->
+%       NewClientList = removeClient(PID, ConfigDict, ClientList),
+%       clientManagerloop(NewClientList, ConfigDict, Communication);
+% 
+% 
+%     Any ->
+%       werkzeug:logging(Logfile, io_lib:format("~p Client Management: Unbekante Nachricht eingetroffen: ~p \n", [werkzeug:timeMilliSecond(), Any]))
+% 
+%   end
+% .
 
 %-----------------------------------------------------------%
 % Entfernt den Client mit der ClientPID aus der Clientliste %
