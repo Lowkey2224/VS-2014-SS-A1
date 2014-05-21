@@ -28,7 +28,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
     undefined ->
       PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
-      logging(Logfile, io_lib:format("~p Queue Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
+      logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
   end,
   ServiceName ! {Order, Arguments}
@@ -42,7 +42,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
     undefined ->
       PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
-      logging(Logfile, io_lib:format("~p Queue Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
+      logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
   end
 .
@@ -61,9 +61,11 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId);
 
     {new_message, {Message, Number}} ->
+
       NewMessage = Message ++ "; HBQ In: " ++ werkzeug:timeMilliSecond(),
       NewHBQ = werkzeug:pushSL(HBQ, {Number, NewMessage}),
       werkzeug:logging(Logfile, io_lib:format("~p received new message request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
+
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
