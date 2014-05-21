@@ -28,7 +28,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
     undefined ->
       PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
-      logging(Logfile, io_lib:format("~p Queue Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
+      logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
   end,
   ServiceName ! {Order, Arguments}
@@ -42,7 +42,7 @@ ServiceName = dict:fetch((servicename, ConfigDict),
     undefined ->
       PIDmsgservice = erlang:spawn(fun() -> msgServiceLoop(ConfigDict, [], [], 0, 1) end),
       erlang:register(ServiceName, PIDmsgservice),
-      logging(Logfile, io_lib:format("~p Queue Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
+      logging(Logfile, io_lib:format("~p Message Service erfolgreich gestartet PID: ~p\n", [timeMilliSecond(), PIDmsgservice]));
     _NotUndef -> ok
   end
 .
@@ -61,16 +61,10 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId) ->
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, MaxMsgId);
 
     {new_message, {Message, Number}} ->
-<<<<<<< HEAD
-%% TODO: Check if number and string
-      NewMessage = Message ++ "; HBQ In: " ++ timeMilliSecond(),
-      NewHBQ = pushSL(HBQ, {Number, NewMessage}),
-      logging(Logfile, io_lib:format("~p received new_message request, Message: ~p, Number: ~p, HBQ: ~p \n", [timeMilliSecond(), Message, Number, NewHBQ])),
-=======
+
       NewMessage = Message ++ "; HBQ In: " ++ werkzeug:timeMilliSecond(),
       NewHBQ = werkzeug:pushSL(HBQ, {Number, NewMessage}),
-      werkzeug:logging(Logfile, io_lib:format("~p received drop request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
->>>>>>> 73916d5bbde46392ec5d77126179a919fc76c734
+      werkzeug:logging(Logfile, io_lib:format("~p received new request, Message: ~p, Number: ~p, HBQ: ~p \n", [werkzeug:timeMilliSecond(), Message, Number, NewHBQ])),
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
