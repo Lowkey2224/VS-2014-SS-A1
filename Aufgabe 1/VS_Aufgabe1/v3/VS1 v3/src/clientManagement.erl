@@ -8,8 +8,8 @@
 %%% Created : 16. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(clientManagement).
--author("Leon Fausten").
--author("Erwin Lang").
+-author("loki").
+-author("marilena").
 
 %% API
 -export([start/2, stop/0]).

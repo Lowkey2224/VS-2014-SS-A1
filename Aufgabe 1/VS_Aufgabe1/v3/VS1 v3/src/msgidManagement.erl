@@ -8,8 +8,8 @@
 %%% Created : 19. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(msgidManagement).
--author("Leon Fausten").
--author("Erwin Lang").
+-author("loki").
+-author("marilena").
 
 %% API
 -export([sendmsgid/2]).
