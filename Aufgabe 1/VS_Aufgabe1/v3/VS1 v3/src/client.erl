@@ -23,10 +23,14 @@ clientStart(Host, Address, Config, Number) ->
   {ok, TimeInterval} = get_config_value(sendeintervall, Config),
   {ok, Server} = get_config_value(servername, Config),
   timer:exit_after(Lifetime * 1000, self(), timeout),
-  Pid = {Server, list_to_atom(lists:concat([Host, "@", Address]))},
-  Text = lists:concat(["Gestartet: ",to_String(node()), "-", to_String(self()), "-0204 Startzeit: ", timeMilliSecond(), "\n"]),
+LogFile = lists:concat(["client_", Number, to_String(node()), ".log"]),
+ServerName = list_to_atom(lists:concat([Host, "@", Address])),
+% 	F2= global:whereis_name(ServerName),
+  	Pid = global:whereis_name(Server),
+% logging(LogFile, lists:concat(["ServerName: ",to_String(ServerName), " F2", to_String(F2),"F3", to_String(F3),  "\n"])),
+%   Pid = {Server, global:whereis_name(Server)},
+  Text = lists:concat(["Gestartet: ",to_String(node()), "-", to_String(self()), "-0310 Startzeit: ", timeMilliSecond(), "\n"]),
 
-  LogFile = lists:concat(["client_", Number, to_String(node()), ".log"]),
   logging(LogFile, Text),
   loop(Pid, Number, LogFile, TimeInterval*1000, ToSend).
 
@@ -36,23 +40,27 @@ clientStart(Host, Address, Config, Number) ->
 % Die Logik des Clients, wie der Wechsel zwischen Redakteur und Leser, befindet sich hier %
 %---------------------------------------------------------------------------------------- %
 loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
+
   if ToSend > 0 ->
     %Redakteur, Ids werden geholt und Nachrichten gesendet
+	
     Pid ! {query_msgid, self()},
-    receive {msgid, MsgId} ->
 
-      Log = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0204 MsgId: ", MsgId, " von: ", to_String(Pid), " erhalten um: ", timeMilliSecond(), "\n"]),
+    receive {msgid, MsgId} -> 	
+       logging(LogFile, lists:concat(["MsgId", "-", to_String(MsgId),"\n"])),
+      Log = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0310 MsgId: ", MsgId, " von: ", to_String(Pid), " erhalten um: ", timeMilliSecond(), "\n"]),
       logging(LogFile, Log),
       Time = if ToSend =< 1 -> changeTimeInterval(TimeInterval, LogFile);
         ToSend > 1 -> TimeInterval
         end,
+% logging(LogFile, lists:concat(["SleeptIme", "-", to_String(Time),"\n"])),
       timer:sleep(Time),
 
       if ToSend > 1 ->
         Msg = generateMessage([Number,to_String(node())],MsgId ),
         dropMessage(Pid, Msg, MsgId, LogFile);
       ToSend =< 1 ->
-          Msg = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0204: ", MsgId, "te_Nachricht um ", timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
+          Msg = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0310: ", MsgId, "te_Nachricht um ", timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
           logging(LogFile, Msg)
       end,
       loop(Pid, Number, LogFile, Time, ToSend - 1);
@@ -76,7 +84,7 @@ dropMessage(Pid, Msg, MsgId, LogFile) ->
 % der Praktikumsgruppe/Teamnummer, der MsgId und der Zeit @return Nachricht           %
 %-------------------------------------------------------------------------------------%
 generateMessage(Client, MsgId) ->
-  lists:concat([to_String(Client), "-0204-", to_String(self()),"-",
+  lists:concat([to_String(Client), "-0310-", to_String(self()),"-",
     to_String(MsgId),"te Nachricht" "-Sendezeit:",timeMilliSecond()]).
 
 %-------------------------------------------------------------------------------------%
