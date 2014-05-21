@@ -1,11 +1,11 @@
 %%%-------------------------------------------------------------------
-%%% @author Leon
-%%% @author Erwin Lang
-%%% @copyright (C) 2013, <COMPANY>
+%%% @author loki
+%%% @author marilena
+%%% @copyright (C) 2014, <COMPANY>
 %%% @doc
 %%%
 %%% @end
-%%% Created : 13. Okt 2013 11:04
+%%% Created : 19. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(communication).
 -author("Leon Fausten").
