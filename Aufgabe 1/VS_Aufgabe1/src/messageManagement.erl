@@ -153,7 +153,7 @@ getNextMessageId(DLQ, ActualNumber) ->
   NextNumber = ActualNumber + 1,
   DLQmin = werkzeug:minNrSL(DLQ),
   if
-    DLQmin =:= -1 ->  %prüfen, oob nciht leer
+    DLQmin =:= -1 ->  %prüfen, ob nciht leer
       NN = -1;
     NextNumber =< DLQmin ->  %falls es eine gibt
       NN = DLQmin;

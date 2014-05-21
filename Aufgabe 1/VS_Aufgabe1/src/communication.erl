@@ -49,7 +49,7 @@ startServer() ->
   case Known of
     undefined ->
       Server = erlang:spawn(fun() -> initServer(ConfigDict) end),
-      erlang:register(Servername, Server),
+      global:register_name(Servername, Server),
       logging(Logfile, io_lib:format("~p Server erfolgreich gestartet mit PID: ~p .\n", [timeMilliSecond(), Server])),
       Server;
     _NotUndef -> logging(Logfile, io_lib:format("~p Server läuft bereits mit PID: ~p \n", [timeMilliSecond(), Known])),
