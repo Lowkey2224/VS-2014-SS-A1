@@ -96,17 +96,17 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
   Logfile = dict:fetch(logfile, ConfigDict),
   receive
     kill -> true;
-    {getmessages, PID} -> 
+    {query_messages, PID} -> 
       sendMessageToClient(PID, ConfigDict),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {dropmessage, {Message, Number}} ->
+    {new_message, {Message, Number}} ->
       messageManagement:messageService(dropmessage, {Message, Number}, ConfigDict, self()),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {getmsgid, PID} -> NewMsgId = messageManagement:messageService(PID, MsgId),
+    {query_msgid, PID} -> NewMsgId = messageManagement:messageService(PID, MsgId),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, NewMsgId, Timer);
     Any -> logging(Logfile, io_lib:format("~p Unbekannte Anforderung erhalten: ~p\n", [timeMilliSecond(), Any])),
@@ -121,18 +121,18 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->
   Logfile = dict:fetch(logfile, ConfigDict),
-  logging(Logfile, io_lib:format("~p getMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
+  logging(Logfile, io_lib:format("~p queryMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
   {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
   ClientManagement ! {get_last_msgid, PID},
   receive
     kill -> true;
     {reply, last_msgid, LastMsgId} ->
-      messageManagement:messageService(getmessage, {LastMsgId} ,ConfigDict, self()),
+      messageManagement:messageService(query_messages, {LastMsgId} ,ConfigDict, self()),
       receive
         kill -> true;
         {reply, nextmsg, Message} ->
           sendMessage(PID, Message),
-          {reply, NewMsgId, _, _} = Message,
+          {message, NewMsgId, _, _} = Message,
           logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
           ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
         end

@@ -45,7 +45,7 @@ msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber) ->
 
     {query_messages, PID} ->
       logging(Logfile, io_lib:format("~p received get request from ~p \n", [werkzeug:timeMilliSecond(), PID])),
-      clientManagement:sendMessageToClient(PID, ConfigDict, DLQ),
+      communication:sendMessageToClient(PID, ConfigDict, DLQ),
       msgServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber);
 
     {dropmessage, {Message, Number}} ->
