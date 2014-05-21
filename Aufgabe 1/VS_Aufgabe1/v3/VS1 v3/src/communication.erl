@@ -100,8 +100,8 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {{new_message, {Message, Number}} ->
-      queueManagement:queueService({new_message, {Message, Number}, ConfigDict, self()),
+    {new_message, {Message, Number}} ->
+      queueManagement:queueService(new_message, {Message, Number}, ConfigDict, self()),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
