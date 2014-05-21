@@ -96,7 +96,7 @@ queryMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
     werkzeug:logging(LogFile, Log),
 
     if Terminated == false ->
-      queryMessages(Pid, ClientNumber, LogFile, TimeInterval);
+      getMessages(Pid, ClientNumber, LogFile, TimeInterval);
     Terminated == true ->
         werkzeug:logging(LogFile, "All messages received\n"),
         loop(Pid, ClientNumber, LogFile, TimeInterval, 5)

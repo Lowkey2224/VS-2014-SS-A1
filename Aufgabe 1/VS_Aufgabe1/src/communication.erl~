@@ -70,14 +70,14 @@ initServer(ConfigDict) ->
 
 %----------------------------------------------------------%
 % Beendet den Server und falls gestartet auch die Prozesse %
-% zur Message und Client verwaltung                          %
+% zur queue und Client verwaltung                          %
 %----------------------------------------------------------%
 stopServer() ->
   {ok, ConfigList} = file:consult(?CONFIGFILE),
   {ok, Servername} = get_config_value(servername, ConfigList),
   {ok, Logfile} = get_config_value(serverlogfile, ConfigList),
   clientManagement:stop(),
-  messageManagement:stop(),
+  queueManagement:stop(),
   Known = erlang:whereis(Servername),
   case Known of
     undefined -> false;
@@ -116,7 +116,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 
 .
 %-------------------------------------------------------------------------------------------%
-% Neu eingefügt zur Entkopplung: Verwendet das messagemanagement und clientmanagement um eine %
+% Neu eingefügt zur Entkopplung: Verwendet das queuemanagement und clientmanagement um eine %
 % Nachricht an den Client PID zu senden                                                     %
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->
@@ -127,7 +127,7 @@ sendMessageToClient(PID, ConfigDict) ->
   receive
     kill -> true;
     {reply, last_msgid, LastMsgId} ->
-      messageManagement:messageService(getmessage, {LastMsgId} ,ConfigDict, self()),
+      queueManagement:queueService(getmessage, {LastMsgId} ,ConfigDict, self()),
       receive
         kill -> true;
         {reply, nextmsg, Message} ->
