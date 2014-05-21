@@ -8,8 +8,8 @@
 %%% Created : 19. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(queueManagement).
--author("Leon Fausten").
--author("Erwin Lang").
+-author("loki").
+-author("marilena").
 
 %% API
 -export([queueService/4, stop/0, getNextMessageId/2]).
@@ -43,10 +43,10 @@ queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication) ->
   receive
     kill -> true;
     %message wird in HBQ getan und DLQ wird upgedated
-    {dropmessage, {Message, Number}} ->
+    {new_message, {Message, Number}} ->
       NewMessage = Message ++ "; HBQ In: " ++ timeMilliSecond(),
       NewHBQ = pushSL(HBQ, {Number, NewMessage}),
-      logging(Logfile, io_lib:format("~p dropMessage erhalten, Message: ~p, Number: ~p\n", [timeMilliSecond(), Message, Number])),
+      logging(Logfile, io_lib:format("~p newMessage erhalten, Message: ~p, Number: ~p\n", [timeMilliSecond(), Message, Number])),
 
       HBQLength = length(NewHBQ),
       HalfDLQCapacity = DLQLimit / 2,
@@ -60,7 +60,7 @@ queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication) ->
           queueServiceLoop(ConfigDict, NewHBQ, DLQ, LastDLQMsgNumber, Communication)
       end;
     % message mit der msgid Number wird gelesen
-    {getmessage, {Number}} ->
+    {query_message, {Number}} ->
         NextMsgId = getNextMessageId(DLQ, Number),
 
         if NextMsgId =/= -1 ->

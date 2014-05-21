@@ -8,8 +8,8 @@
 %%% Created : 19. May 2014 14:56
 %%%-------------------------------------------------------------------
 -module(communication).
--author("Leon Fausten").
--author("Erwin Lang").
+-author("loki").
+-author("marilena").
 
 %% API
 -export([startServer/0, stopServer/0, sendMessage/2]).
