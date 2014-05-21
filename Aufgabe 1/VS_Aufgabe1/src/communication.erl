@@ -77,7 +77,7 @@ stopServer() ->
   {ok, Servername} = get_config_value(servername, ConfigList),
   {ok, Logfile} = get_config_value(serverlogfile, ConfigList),
   clientManagement:stop(),
-  queueManagement:stop(),
+  messageManagement:stop(),
   Known = erlang:whereis(Servername),
   case Known of
     undefined -> false;
@@ -101,7 +101,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
       communicationLoop(ConfigDict, MsgId, Timer);
 
     {dropmessage, {Message, Number}} ->
-      queueManagement:queueService(dropmessage, {Message, Number}, ConfigDict, self()),
+      messageManagement:messageService(dropmessage, {Message, Number}, ConfigDict, self()),
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
@@ -126,7 +126,7 @@ sendMessageToClient(PID, ConfigDict) ->
   receive
     kill -> true;
     {reply, last_msgid, LastMsgId} ->
-      queueManagement:queueService(getmessage, {LastMsgId} ,ConfigDict, self()),
+      messageManagement:messageService(getmessage, {LastMsgId} ,ConfigDict, self()),
       receive
         kill -> true;
         {reply, nextmsg, Message} ->
