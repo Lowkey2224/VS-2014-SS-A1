@@ -19,15 +19,15 @@
 %-------------------------------------------------------------------------------------%
 clientStart(Host, Address, Config, Number) ->
   ToSend = 5,
-  {ok, Lifetime} = get_config_value(lifetime, Config),
-  {ok, TimeInterval} = get_config_value(sendeintervall, Config),
-  {ok, Server} = get_config_value(servername, Config),
+  {ok, Lifetime} = werkzeug:get_config_value(lifetime, Config),
+  {ok, TimeInterval} = werkzeug:get_config_value(sendeintervall, Config),
+  {ok, Server} = werkzeug:get_config_value(servername, Config),
   timer:exit_after(Lifetime * 1000, self(), timeout),
   Pid = {Server, list_to_atom(lists:concat([Host, "@", Address]))},
-  Text = lists:concat(["Gestartet: ",to_String(node()), "-", to_String(self()), "-0204 Startzeit: ", timeMilliSecond(), "\n"]),
+  Text = lists:concat(["Gestartet: ",werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204 Startzeit: ", werkzeug:timeMilliSecond(), "\n"]),
 
-  LogFile = lists:concat(["client_", Number, to_String(node()), ".log"]),
-  logging(LogFile, Text),
+  LogFile = lists:concat(["client_", Number, werkzeug:to_String(node()), ".log"]),
+  werkzeug:logging(LogFile, Text),
   loop(Pid, Number, LogFile, TimeInterval*1000, ToSend).
 
 
@@ -41,23 +41,23 @@ loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
     Pid ! {query_mesgid, self()},
     receive {msgid, MsgId} ->
 
-      Log = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0204 MsgId: ", MsgId, " von: ", to_String(Pid), " erhalten um: ", timeMilliSecond(), "\n"]),
-      logging(LogFile, Log),
+      Log = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204 MsgId: ", MsgId, " von: ", werkzeug:to_String(Pid), " erhalten um: ", werkzeug:timeMilliSecond(), "\n"]),
+      werkzeug:logging(LogFile, Log),
       Time = if ToSend =< 1 -> changeTimeInterval(TimeInterval, LogFile);
         ToSend > 1 -> TimeInterval
         end,
       timer:sleep(Time),
 
       if ToSend > 1 ->
-        Msg = generateMessage([Number,to_String(node())],MsgId ),
-        dropMessage(Pid, Msg, MsgId, LogFile);
+        Msg = generateMessage([Number,werkzeug:to_String(node())],MsgId ),
+        newMessage(Pid, Msg, MsgId, LogFile);
       ToSend =< 1 ->
-          Msg = lists:concat([Number, "-", to_String(node()), "-", to_String(self()), "-0204: ", MsgId, "te_Nachricht um ", timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
-          logging(LogFile, Msg)
+          Msg = lists:concat([Number, "-", werkzeug:to_String(node()), "-", werkzeug:to_String(self()), "-0204: ", MsgId, "te_Nachricht um ", werkzeug:timeMilliSecond(), " nicht gesendet ***vergessen***\n"]),
+          werkzeug:logging(LogFile, Msg)
       end,
       loop(Pid, Number, LogFile, Time, ToSend - 1);
 
-    Any -> logging(LogFile,io_lib:format("Unbekanntes Antwortformat:~p\n", [Any]))
+    Any -> werkzeug:logging(LogFile,io_lib:format("Unbekanntes Antwortformat:~p\n", [Any]))
     end;
   %Leser, alle Nachrichten werden geholt
   ToSend =:= 0 ->  getMessages(Pid, Number, LogFile, TimeInterval)
@@ -66,18 +66,18 @@ loop(Pid, Number, LogFile, TimeInterval, ToSend) ->
 %-------------------------------------------------------------------------------------%
 % Sendet Nachricht an den Server wie in der Schnittstelle vorgegeben                  %
 %-------------------------------------------------------------------------------------%
-dropMessage(Pid, Msg, MsgId, LogFile) ->
+newMessage(Pid, Msg, MsgId, LogFile) ->
   Pid ! {new_message, {Msg, MsgId}},
   Log = lists:concat([Msg, "gesendet\n"]),
-  logging(LogFile, Log).
+  werkzeug:logging(LogFile, Log).
 
 %-------------------------------------------------------------------------------------%
 % Erzeugt eine Nachricht bestehend aus Clientnummer, Host,                            %
 % der Praktikumsgruppe/Teamnummer, der MsgId und der Zeit @return Nachricht           %
 %-------------------------------------------------------------------------------------%
 generateMessage(Client, MsgId) ->
-  lists:concat([to_String(Client), "-0204-", to_String(self()),"-",
-    to_String(MsgId),"te Nachricht" "-Sendezeit:",timeMilliSecond()]).
+  lists:concat([werkzeug:to_String(Client), "-0204-", werkzeug:to_String(self()),"-",
+    werkzeug:to_String(MsgId),"te Nachricht" "-Sendezeit:",werkzeug:timeMilliSecond()]).
 
 %-------------------------------------------------------------------------------------%
 % Holt alle Nachrichten vom Server und fügt an vom eigenen Redakteur gesendete        %
@@ -92,13 +92,13 @@ getMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
     IsOwn =:= false -> Append = ""
     end,
 
-    Log = lists:concat([Message, ".", Append, "; Erhalten: ", timeMilliSecond(), "|\n"]),
-    logging(LogFile, Log),
+    Log = lists:concat([Message, ".", Append, "; Erhalten: ", werkzeug:timeMilliSecond(), "|\n"]),
+    werkzeug:logging(LogFile, Log),
 
     if Terminated == false ->
       getMessages(Pid, ClientNumber, LogFile, TimeInterval);
     Terminated == true ->
-        logging(LogFile, "All messages received\n"),
+        werkzeug:logging(LogFile, "All messages received\n"),
         loop(Pid, ClientNumber, LogFile, TimeInterval, 5)
     end
   end.
@@ -125,5 +125,5 @@ changeTimeInterval(CurrentTime, LogFile) ->
   if  NewTime =< Min ->UpdatedTime = Min;
       NewTime > Min -> UpdatedTime = NewTime
   end,
-  logging(LogFile, lists:concat(["Neues Sendeintervall: ", trunc(UpdatedTime/1000), " Sekunden\n"])),
+  werkzeug:logging(LogFile, lists:concat(["Neues Sendeintervall: ", trunc(UpdatedTime/1000), " Sekunden\n"])),
   UpdatedTime.
