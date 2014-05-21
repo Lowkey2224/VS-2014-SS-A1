@@ -127,30 +127,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
   end
 
 .
-%-------------------------------------------------------------------------------------------%
-% Neu eingefügt zur Entkopplung: Verwendet das messagemanagement und clientmanagement um eine %
-% Nachricht an den Client PID zu senden                                                     %
-%-------------------------------------------------------------------------------------------%
-sendMessageToClient(PID, ConfigDict) ->
-  Logfile = dict:fetch(logfile, ConfigDict),
 
-  logging(Logfile, io_lib:format("~p queryMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
-  {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
-  ClientManagement ! {get_last_msgid, PID},
-  receive
-    kill -> true;
-    {reply, last_msgid, LastMsgId} ->
-      messageManagement:messageService(query_messages, {LastMsgId} ,ConfigDict, self()),
-      receive
-        kill -> true;
-        {reply, nextmsg, Message} ->
-          sendMessage(PID, Message),
-          {message, NewMsgId, _, _} = Message,
-          logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
-          ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
-        end
-      end
-  .
 
 %---------------------------------------------------%
 % Startet den Timer für die Serverlebenszeit neu    %
