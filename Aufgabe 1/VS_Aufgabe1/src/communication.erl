@@ -31,16 +31,18 @@ startServer() ->
   Cfg = dict:new(),
   {ok, ConfList} = file:consult(?CONFIGFILE),
   {ok, Servername} = get_config_value(servername, ConfList),
+  {ok, Servicename} = get_config_value(servicename, ConfList),
   {ok, Logfile} = get_config_value(serverlogfile, ConfList),
   {ok, DLQLimit} = get_config_value(dlqlimit, ConfList),
   {ok, ClientLifeTime} = get_config_value(clientlifetime, ConfList),
   {ok, ServerLifeTime} = get_config_value(serverlifetime, ConfList),
 %% Add configurations to dictionary
   ConfigDict = dict:store(servername, Servername,
-    dict:store(logfile, Logfile,
-      dict:store(dlqlimit, DLQLimit,
-        dict:store(clientlifetime, ClientLifeTime * 1000,
-          dict:store(serverlifetime, ServerLifeTime * 1000,Cfg))))),
+    dict:store(servicename, Servicename,
+      dict:store(logfile, Logfile,
+        dict:store(dlqlimit, DLQLimit,
+          dict:store(clientlifetime, ClientLifeTime * 1000,
+            dict:store(serverlifetime, ServerLifeTime * 1000,Cfg))))),
 
   %----------------------------%
   % Start server if not runnig %
@@ -53,6 +55,13 @@ startServer() ->
       logging(Logfile, io_lib:format("~p Server erfolgreich gestartet mit PID: ~p .\n", [timeMilliSecond(), Server])),
       Server;
     _NotUndef -> logging(Logfile, io_lib:format("~p Server läuft bereits mit PID: ~p \n", [timeMilliSecond(), Known])),
+      Known
+  end,
+
+Known = erlang:whereis(Servicename),
+  case Known of
+    undefined ->
+      messageManagement:messageService(ConfigDict);
       Known
   end
 .
@@ -75,9 +84,10 @@ initServer(ConfigDict) ->
 stopServer() ->
   {ok, ConfigList} = file:consult(?CONFIGFILE),
   {ok, Servername} = get_config_value(servername, ConfigList),
+  {ok, Servicename} = get_config_value(servicename, ConfList),
   {ok, Logfile} = get_config_value(serverlogfile, ConfigList),
   clientManagement:stop(),
-  messageManagement:stop(),
+  messageManagement:stop(ServiceName),
   Known = erlang:whereis(Servername),
   case Known of
     undefined -> false;
@@ -94,6 +104,7 @@ stopServer() ->
 %----------------------------------------------------%
 communicationLoop(ConfigDict, MsgId, ServerTimer) ->
   Logfile = dict:fetch(logfile, ConfigDict),
+  ServiceName = dict:fetch((servicename, ConfigDict),
   receive
     kill -> true;
     {query_messages, PID} -> 
@@ -102,11 +113,12 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
       communicationLoop(ConfigDict, MsgId, Timer);
 
     {new_message, {Message, Number}} ->
-      messageManagement:messageService(dropmessage, {Message, Number}, ConfigDict, self()),
+      ServiceName ! {new_message, {Message, Number}},
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, MsgId, Timer);
 
-    {query_msgid, PID} -> NewMsgId = messageManagement:messageService(PID, MsgId),
+    {query_msgid, PID} -> NewMsgId = 
+	ServiceName ! {query_msgid,PID},
       Timer = restartTimer(ServerTimer, ConfigDict),
       communicationLoop(ConfigDict, NewMsgId, Timer);
     Any -> logging(Logfile, io_lib:format("~p Unbekannte Anforderung erhalten: ~p\n", [timeMilliSecond(), Any])),
@@ -121,6 +133,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->
   Logfile = dict:fetch(logfile, ConfigDict),
+
   logging(Logfile, io_lib:format("~p queryMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
   {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
   ClientManagement ! {get_last_msgid, PID},
