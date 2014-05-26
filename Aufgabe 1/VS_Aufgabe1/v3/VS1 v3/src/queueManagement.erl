@@ -72,6 +72,7 @@ queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication) ->
         end,
         Communication ! {reply, nextmsg, Message},
         queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication);
+
     Any ->
       logging(Logfile, io_lib:format("~p Unbekannte Aufforderung erhalten: ~p\n", [timeMilliSecond(), Any])),
       queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication)

@@ -120,13 +120,13 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->
   Logfile = dict:fetch(logfile, ConfigDict),
-  logging(Logfile, io_lib:format("~p getMessages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
+  logging(Logfile, io_lib:format("~p query_essages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
   {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
   ClientManagement ! {get_last_msgid, PID},
   receive
     kill -> true;
     {reply, last_msgid, LastMsgId} ->
-      queueManagement:queueService(getmessage, {LastMsgId} ,ConfigDict, self()),
+      queueManagement:queueService(query_msgid, {LastMsgId} ,ConfigDict, self()),
       receive
         kill -> true;
         {reply, nextmsg, Message} ->
