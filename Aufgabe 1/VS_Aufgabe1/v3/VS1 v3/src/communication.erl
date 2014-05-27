@@ -131,7 +131,8 @@ sendMessageToClient(PID, ConfigDict) ->
         kill -> true;
         {reply, nextmsg, Message} ->
           sendMessage(PID, Message),
-          {message, NewMsgId, _, _} = Message,
+          {reply, NewMsgId, Msg, Terminated} = Message,
+          PID ! {message, NewMsgId, Msg, Terminated},
           logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
           ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
         end
