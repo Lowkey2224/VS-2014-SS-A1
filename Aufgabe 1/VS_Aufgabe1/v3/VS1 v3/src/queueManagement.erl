@@ -66,9 +66,9 @@ queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication) ->
         if NextMsgId =/= -1 ->
           {FinalMsgId, MsgText} = findneSL(DLQ, NextMsgId),
           Terminated = getNextMessageId(DLQ, NextMsgId) =:= -1,
-          Message = {reply, FinalMsgId, MsgText, Terminated};
+          Message = {message, FinalMsgId, MsgText, Terminated};
         NextMsgId =:= -1 ->
-          Message = {reply, 0, "Keine Nachrichten zum senden verfügbar", true}
+          Message = {message, 0, "Keine Nachrichten zum senden verfügbar", true}
         end,
         Communication ! {reply, nextmsg, Message},
         queueServiceLoop(ConfigDict, HBQ, DLQ, LastDLQMsgNumber, Communication);
