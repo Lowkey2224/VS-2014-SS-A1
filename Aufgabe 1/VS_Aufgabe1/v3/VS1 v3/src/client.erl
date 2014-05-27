@@ -27,7 +27,7 @@ LogFile = lists:concat(["client_", Number, to_String(node()), ".log"]),
 ServerName = list_to_atom(lists:concat([Host, "@", Address])),
 % 	F2= global:whereis_name(ServerName),
   	Pid = global:whereis_name(Server),
-% logging(LogFile, lists:concat(["ServerName: ",to_String(ServerName), " F2", to_String(F2),"F3", to_String(F3),  "\n"])),
+ logging(LogFile, lists:concat(["ServerName: ",to_String(Server), " PID", to_String(Pid), "\n"])),
 %   Pid = {Server, global:whereis_name(Server)},
   Text = lists:concat(["Gestartet: ",to_String(node()), "-", to_String(self()), "-0310 Startzeit: ", timeMilliSecond(), "\n"]),
 
@@ -93,6 +93,8 @@ generateMessage(Client, MsgId) ->
 % %-----------------------------------------------------------------------------------%
 getMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
   Pid ! {query_messages, self()},
+  LogDings = lists:concat(["send query_messages to ", to_String(Pid), "|\n"]),
+  logging(LogFile, LogDings),
   receive {message, MsgId, Message, Terminated} ->
     IsOwn = isOwnMessage(Message, ClientNumber, LogFile),
     if IsOwn =:= true ->
@@ -100,7 +102,7 @@ getMessages(Pid, ClientNumber, LogFile, TimeInterval) ->
     IsOwn =:= false -> Append = ""
     end,
 
-    Log = lists:concat([Message, ".", Append, "; Erhalten: ", timeMilliSecond(), "|\n"]),
+    Log = lists:concat(["-----",Message, ".", Append, "; Erhalten: ", timeMilliSecond(), "|\n"]),
     logging(LogFile, Log),
 
     if Terminated == false ->

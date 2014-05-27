@@ -120,7 +120,7 @@ communicationLoop(ConfigDict, MsgId, ServerTimer) ->
 %-------------------------------------------------------------------------------------------%
 sendMessageToClient(PID, ConfigDict) ->
   Logfile = dict:fetch(logfile, ConfigDict),
-  logging(Logfile, io_lib:format("~p query_essages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
+  logging(Logfile, io_lib:format("~p query_messages erhalten von ~p \n", [werkzeug:timeMilliSecond(), PID])),
   {ok, ClientManagement} = clientManagement:start(ConfigDict, self()),
   ClientManagement ! {get_last_msgid, PID},
   receive
@@ -131,7 +131,7 @@ sendMessageToClient(PID, ConfigDict) ->
         kill -> true;
         {reply, nextmsg, Message} ->
           sendMessage(PID, Message),
-          {reply, NewMsgId, _, _} = Message,
+          {message, NewMsgId, _, _} = Message,
           logging(Logfile, io_lib:format("~p Nachricht wurde an Client ~p gesendet: ~p\n", [timeMilliSecond(), PID, Message])),
           ClientManagement ! {update_last_msgid_restart_timer, PID, NewMsgId}
         end
