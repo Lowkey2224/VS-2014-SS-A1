@@ -13,7 +13,7 @@
 
 %% API
 -export([startServer/0, stopServer/0, sendMessage/2]).
--import(werkzeug, [get_config_value/2, logging/2, logstop/0, timeMilliSecond/0]).
+-import(werkzeug, [get_config_value/2, logging/2, logstop/0, timeMilliSecond/0, to_String/1]).
 
 -define(CONFIGFILE, "server.cfg").
 
@@ -52,7 +52,7 @@ startServer() ->
       global:register_name(Servername, Server),
       logging(Logfile, io_lib:format("~p Server erfolgreich gestartet mit PID: ~p .\n", [timeMilliSecond(), Server])),
       Server;
-    _NotUndef -> logging(Logfile, io_lib:format("~p Server läuft bereits mit PID: ~p \n", [timeMilliSecond(), Known])),
+    _NotUndef -> logging(Logfile, io_lib:format("~p Server läuft bereits mit PID: ~p \n", [timeMilliSecond(), to_String(Known)])),
       Known
   end
 .
@@ -79,9 +79,11 @@ stopServer() ->
   clientManagement:stop(),
   queueManagement:stop(),
   Known = global:whereis_name(Servername),
+  logging(Logfile, io_lib:format("~p Server: ~p \n", [timeMilliSecond(), to_String(Known)])),
   case Known of
     undefined -> false;
-    _NotUndef -> Servername ! kill,
+	 
+    	_Else -> Known ! kill,
       logging(Logfile, io_lib:format("~p Server erfolgreich gestoppt \n", [timeMilliSecond()]))
   end,
   logstop()
