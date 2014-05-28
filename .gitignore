@@ -11,5 +11,7 @@ erl_crash.dump
 .idea
 *.iml
 
+*.db
+
 #our files
 *.log
