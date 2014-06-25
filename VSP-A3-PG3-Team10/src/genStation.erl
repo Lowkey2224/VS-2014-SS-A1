@@ -52,7 +52,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
-  {StationClass, StationName, Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
+  {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
 %%   werkzeug:logging(logDatei, io:format("~nNachricht ~p von ~p erhalten", [lists:flatten(Data), StationName])),
 
   if ClockType =:= "B" -> %% Uhr synchronisieren.
