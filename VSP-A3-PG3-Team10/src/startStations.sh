@@ -20,10 +20,10 @@
 # To use this script assign the appropriate values to the variables below.
 #
 #
-interfaceName=$1
+interfaceName=$1   #eth2
 interfaceip=`/sbin/ifconfig $1 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
-mcastAddress=$2
-receivePort=$3
+mcastAddress=$2         #225.10.1.2
+receivePort=$3    #15010
 firstIndex=$4
 lastIndex=$5
 stationClass=$6
