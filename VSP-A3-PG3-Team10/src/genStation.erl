@@ -2,12 +2,13 @@
 -import(werkzeug, [get_config_value/2, logging/2, logstop/0, timeMilliSecond/0, delete_last/1, shuffle/1, type_is/1, to_String/1, bestimme_mis/2]).
 -behaviour(gen_server).
 -define(LIFETIME, 3333330000).
--define(SLOTLIST, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]).
+-define(SLOTLIST, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]).
 -define(ATIMECHANGE, 1).
 -define(ATIMETOLERANCE, 2).
 -define(TTL, 1).
 -define(MILLISECOND_TO_SECONDS_FACTOR, 1000).
 -define(MICROSECOND_TO_SECONDS_FACTOR, 1000000).
+-define(SENDER_LOG, logFileSender).
 
 %Functions needed by gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -51,8 +52,8 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
-  {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
-%%   io:format("~nNachricht ~p von ~p erhalten", [lists:flatten(Data), StationName]),
+  {StationClass, StationName, Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
+%%   werkzeug:logging(logDatei, io:format("~nNachricht ~p von ~p erhalten", [lists:flatten(Data), StationName])),
 
   if ClockType =:= "B" -> %% Uhr synchronisieren.
     syncBTime(StationClass, Time, ArriveTime);
@@ -76,7 +77,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
     NewBookedSlots = lists:append([SlotNumber], []),  %% Slotnummer, die im Packet stand, in Liste eintragen
     gen_server:call(?MODULE, {set_slot, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
     random:seed(erlang:now()),
-    Slot = random:uniform(25) - 1,        %%Slot zufaellig auswaehlen, in dem wir im naechsten frame senden wollen
+    Slot = random:uniform(25),        %%Slot zufaellig auswaehlen, in dem wir im naechsten frame senden wollen
     gen_server:call(?MODULE, {set_nextSlot, Slot});  
     true ->
       NewFrame = FrameNr,  %%naechster Frame
@@ -121,9 +122,17 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
   end,
 
 
-%%   %% Zeitdifferenz zwischen dem wirklichen Frameanfang und dem gewarteten Anfang
 
-  timer:sleep((RSlot * 40 + 10)),
+
+
+%%   %% Zeitdifferenz zwischen dem wirklichen Frameanfang und dem gewarteten Anfang
+%% Slotnummern von 0-24
+%%   timer:sleep((RSlot * 40 + 10)),
+%% Slotnummern von 1-25
+
+  SleepDuration =(RSlot-1) * 40 + 10,
+%%   werkzeug:logging(?SENDER_LOG, io:format("~nDuration ~p bei Slot ~p ~n", [SleepDuration, RSlot])),
+  timer:sleep(SleepDuration),
   NextSlot = gen_server:call(?MODULE, {get_nextSlot}),
 
   gen_udp:send(Socket, Addr, Port, composeMessage(NextSlot)),

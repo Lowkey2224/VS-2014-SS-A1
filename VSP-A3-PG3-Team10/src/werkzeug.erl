@@ -43,16 +43,16 @@ logstop() -> Known = erlang:whereis(logklc),
   end.
 
 logloop(Y) -> receive
-  {Datei, Inhalt} -> %io:format(Inhalt),
-    file:write_file(Datei, Inhalt, [append]),
-    logloop(Y + 1);
-  kill -> true
-end.
+                {Datei, Inhalt} -> io:format(Inhalt),
+                  file:write_file(Datei, Inhalt, [append]),
+                  logloop(Y + 1);
+                kill -> true
+              end.
 
 %% -------------------------------------------
 %%
 % Unterbricht den aktuellen Timer
-% und erstellt einen neuen und gibt ihn zurück
+% und erstellt einen neuen und gibt ihn zurÃ¼ck
 %%
 reset_timer(Timer, Sekunden, Message) ->
   {ok, cancel} = timer:cancel(Timer),
@@ -68,18 +68,19 @@ timeMilliSecond() ->
   Tag = lists:concat([klebe(Day, ""), ".", klebe(Month, ""), " ", klebe(Hour, ""), ":"]),
   {_, _, MicroSecs} = now(),
   Tag ++ concat([Minute, Second], ":") ++ "," ++ toMilliSeconds(MicroSecs) ++ "|".
+
 toMilliSeconds(MicroSecs) ->
   Seconds = MicroSecs / 1000000,
-%% Korrektur, da string:substr( float_to_list(0.234567), 3, 3). 345 ergibt
+  %% Korrektur, da string:substr( float_to_list(0.234567), 3, 3). 345 ergibt
   if (Seconds < 1) -> CorSeconds = Seconds + 1;
     (Seconds >= 1) -> CorSeconds = Seconds
   end,
   string:substr(float_to_list(CorSeconds), 3, 3).
 concat(List, Between) -> concat(List, Between, "").
 concat([], _, Text) -> Text;
-concat([First | []], _, Text) ->
+concat([First|[]], _, Text) ->
   concat([], "", klebe(First, Text));
-concat([First | List], Between, Text) ->
+concat([First|List], Between, Text) ->
   concat(List, Between, string:concat(klebe(First, Text), Between)).
 klebe(First, Text) ->
   NumberList = integer_to_list(First),
@@ -124,11 +125,11 @@ list2String([]) ->
   lists:concat(["[ ]"]);
 list2String([Head]) ->
   lists:concat(["[", werkzeug:to_String(Head), "]"]);
-list2String([Head | Tail]) ->
+list2String([Head|Tail]) ->
   lists:concat(["[", werkzeug:to_String(Head), ",", list2Stringrek(Tail)]).
 list2Stringrek([Head]) ->
   lists:concat([werkzeug:to_String(Head), "]"]);
-list2Stringrek([Head | Tail]) ->
+list2Stringrek([Head|Tail]) ->
   lists:concat([werkzeug:to_String(Head), ",", list2Stringrek(Tail)]);
 list2Stringrek([]) -> "]".
 
@@ -149,15 +150,15 @@ shuffle(List, Acc) ->
 %%push2SL fuegt ein Element gemaess Sortierung ein
 %
 % Wenn ElemNr des Elementes aus der SL groesser oder gleich ist, als die des
-% einzufügenden Elementes, füge das Element per Rekursion rechts davon ein
-pushSL([{ElemNr, Elem} | TSL], {NElemNr, NElem}) when ElemNr >= NElemNr ->
-  [{ElemNr, Elem} | pushSL(TSL, {NElemNr, NElem})];
+% einzufÃ¼genden Elementes, füge das Element per Rekursion rechts davon ein
+pushSL([{ElemNr, Elem}|TSL], {NElemNr, NElem}) when ElemNr >= NElemNr ->
+  [{ElemNr, Elem}|pushSL(TSL, {NElemNr, NElem})];
 % Wenn ElemNr des Elementes aus der SL kleiner ist, als die des
-% einzufügenden Elementes, füge das Element direkt vor diesem Element(links) davon ein
-pushSL([{ElemNr, Elem} | TSL], {NElemNr, NElem}) when ElemNr < NElemNr ->
-  [{NElemNr, NElem}, {ElemNr, Elem} | TSL];
+% einzufÃ¼genden Elementes, füge das Element direkt vor diesem Element(links) davon ein
+pushSL([{ElemNr, Elem}|TSL], {NElemNr, NElem}) when ElemNr < NElemNr ->
+  [{NElemNr, NElem}, {ElemNr, Elem}|TSL];
 % Wenn Keine der vorhandenen Nachrichten eine kleinere Elementnummer
-% hat, füge das neue Element ans Ende der SL ein
+% hat, fÃ¼ge das neue Element ans Ende der SL ein
 pushSL([], {NElemNr, NElem}) ->
   [{NElemNr, NElem}].
 
@@ -168,37 +169,37 @@ popSL([]) -> [];
 % letztes Element wird geloescht
 popSL([_Entity]) -> [];
 % Rekursion bis ans Ende der Liste
-popSL([Entity | TSL]) -> [Entity | popSL(TSL)].
+popSL([Entity|TSL]) -> [Entity|popSL(TSL)].
 
 %%popfiSL loescht Element mit groesster Nummer, also erstes Element
 %
 % bei leerer Liste idempotent
 popfiSL([]) -> [];
 % erstes Element wird geloescht
-popfiSL([_Entity | TSL]) -> TSL.
+popfiSL([_Entity|TSL]) -> TSL.
 
 %%findSL sucht ein Element mit bestimmter Nummer
 %
 % erfolgreicher Fall
-findSL([{SNr, Elem} | _TSL], SNr) -> {SNr, Elem};
+findSL([{SNr, Elem}|_TSL], SNr) -> {SNr, Elem};
 % rekursive Suche
-findSL([{ElemNr, _Elem} | TSL], SNr) when ElemNr > SNr -> findSL(TSL, SNr);
+findSL([{ElemNr, _Elem}|TSL], SNr) when ElemNr > SNr -> findSL(TSL, SNr);
 % bei leeren Liste: Fehlercode
 findSL([], _SNr) -> {-1, nok};
 % Element nicht vorhanden: Fehlercode
-findSL([{ElemNr, _Elem} | _TSL], SNr) when ElemNr < SNr -> {-1, nok}.
+findSL([{ElemNr, _Elem}|_TSL], SNr) when ElemNr < SNr -> {-1, nok}.
 
 %%findneSL sucht ein bestimmtes Element gemaess Nummer
 % gibt ggf das naechst groessere Element zurueck
 %
 % erfolgreicher Fall
-findneSL([{SNr, Elem} | _TSL], SNr) -> {SNr, Elem};
+findneSL([{SNr, Elem}|_TSL], SNr) -> {SNr, Elem};
 % Element nicht vorhanden: es wird das naechst groessere Element genommen
-findneSL([{ElemNr2, Elem2}, {ElemNr1, _Elem1} | _TSL], SNr) when (ElemNr2 > SNr) and (SNr > ElemNr1) -> {ElemNr2, Elem2};
+findneSL([{ElemNr2, Elem2}, {ElemNr1, _Elem1}|_TSL], SNr) when (ElemNr2 > SNr) and (SNr > ElemNr1) -> {ElemNr2, Elem2};
 % rekursive Suche
-findneSL([{ElemNr, _Elem} | TSL], SNr) when ElemNr > SNr -> findneSL(TSL, SNr);
+findneSL([{ElemNr, _Elem}|TSL], SNr) when ElemNr > SNr -> findneSL(TSL, SNr);
 % Element nicht vorhanden und es gibt kein groesseres Element: Fehlercode
-findneSL([{ElemNr, _Elem} | _TSL], SNr) when SNr > ElemNr -> {-1, nok};
+findneSL([{ElemNr, _Elem}|_TSL], SNr) when SNr > ElemNr -> {-1, nok};
 % bei leeren Liste: Fehlercode
 findneSL([], _SNr) -> {-1, nok}.
 
@@ -213,14 +214,14 @@ minNrSL([]) -> -1;
 % erfolgreicher Fall
 minNrSL([{ElemNr, _Elem}]) -> ElemNr;
 % rekursive Suche
-minNrSL([_Entity | TSL]) -> minNrSL(TSL).
+minNrSL([_Entity|TSL]) -> minNrSL(TSL).
 
 %%groesste Nummer in SL
 %
 % bei leeren Liste: Fehlercode
 maxNrSL([]) -> -1;
 % erfolgreicher Fall
-maxNrSL([{ElemNr, _Elem} | _TSL]) -> ElemNr.
+maxNrSL([{ElemNr, _Elem}|_TSL]) -> ElemNr.
 
 %%leere SL erzeugen
 %
@@ -232,11 +233,11 @@ notemptySL([]) -> false;
 notemptySL(_SL) -> true.
 
 %% -------------------------------------------
-%% Löscht das letzte Element einer Liste
+%% LÃ¶scht das letzte Element einer Liste
 %
 delete_last([]) -> [];
 delete_last([_Head]) -> [];
-delete_last([Head | Tail]) -> [Head | delete_last(Tail)].
+delete_last([Head|Tail]) -> [Head|delete_last(Tail)].
 
 % schneller:
 % delete_last(List) ->
@@ -258,11 +259,11 @@ bestimme_mis(WggT, GGTs, Mis) ->
   Mi = einmi([3, 5, 11, 13, 23, 37], WggT),
   Enthalten = lists:member(Mi, Mis),
   if Enthalten -> bestimme_mis(WggT, GGTs, Mis);
-    true -> bestimme_mis(WggT, GGTs - 1, [Mi | Mis])
+    true -> bestimme_mis(WggT, GGTs - 1, [Mi|Mis])
   end.
 % berechnet ein Mi
 einmi([], Akku) -> Akku;
-einmi([Prim | Prims], Akku) ->
-  Expo = random:uniform(3) - 1, % 0 soll möglich sein!
-  AkkuNeu = trunc(Akku * math:pow(Prim, Expo)), % trunc erzeugt integer, was für rem wichtig ist
+einmi([Prim|Prims], Akku) ->
+  Expo = random:uniform(3) - 1, % 0 soll mÃ¶glich sein!
+  AkkuNeu = trunc(Akku * math:pow(Prim, Expo)), % trunc erzeugt integer, was fÃ¼r rem wichtig ist
   einmi(Prims, AkkuNeu).
