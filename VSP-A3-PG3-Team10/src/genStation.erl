@@ -25,7 +25,6 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
   PORT = list_to_integer(atom_to_list(PortNr)),
   dataSave:startLink(),
   LogDatei = lists:concat(["genStation.log"]),
-
   Sender = openSe(IP, PORT),
   Empfaenger = openRec(MULTICAST, IP, PORT),
 
@@ -52,10 +51,10 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
-  {_StationName, _Data, StationClass, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten 
+  {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
 
 
-  if ClockType =:= "B" ->
+  if ClockType =:= "B" -> %% Uhr synchronisieren.
     syncBTime(StationClass, Time, ArriveTime);
     true ->
       syncATime(StationClass, Time, ArriveTime),
@@ -63,12 +62,13 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   end,
 
   NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen 
+  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen
 
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
   %%guckt das hier nach, in welchem Frame wir sind, sodass wir schon für den naechsten Frame, der dann unten NewFrame heisst, einen Slot waehlen?
-  if 0.0 > (Frame - trunc(Frame)) ->  
-    NowFrame = trunc(Frame) - 1;   %%aktuellen Frame setzen
+  if 0.0 > (Frame - trunc(Frame)) ->  %%Wenn Frame angefangen hat
+    NowFrame = trunc(Frame) - 1;
     true ->
       NowFrame = trunc(Frame) end,
 
@@ -193,7 +193,7 @@ decomposeMessage(Package) ->
   StationName = binary_to_list(BinStationName),
   Data = binary_to_list(BinData),
   StationClass = bitstring_to_list(BinStationClass),
-  {StationName, Data, StationClass, SlotNumber, Time}.
+  {StationClass, StationName, Data, SlotNumber, Time}.
 
 
 

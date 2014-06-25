@@ -42,7 +42,7 @@ teamNo="10"
 # Example:    dataSource="~/somewhere/DataSource"
 #         or  dataSource="java -cp . datasource.DataSource"
 ########################################################################################################
-dataSource="./DataSource"
+dataSource="../datasource-executable/32bit/DataSource"
 
 ########################################################################################################
 # TODO: Enter your station's start command.
@@ -69,6 +69,7 @@ variableNames="teamNo, dataSource and stationCmd"
 
 if [ "$teamNo" != "" -a "$dataSource" != "" -a "$stationCmd" != "" ] 
 then
+
 	if [ $# -gt 5 ]
 	then
 		if [ $firstIndex == ${firstIndex//[^0-9]/} -a $lastIndex == ${lastIndex//[^0-9]/} ] 
@@ -78,7 +79,10 @@ then
 			then
 				for i in `seq $firstIndex $lastIndex`
 				do
+
+                    echo "asjkdhash $i"
 					# Launching data source and station.
+					echo "$dataSource $teamNo $i | $stationCmd & "
 					$dataSource $teamNo $i | $stationCmd &
 					#
 					# If your are annoyed by all the output, try this instead:
