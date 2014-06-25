@@ -6,6 +6,7 @@
 -define(ATIMECHANGE, 1).
 -define(ATIMETOLERANCE, 2).
 -define(TTL, 1).
+-define(THOUSAND, 1000).
 
 %Functions needed by gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -27,13 +28,13 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
   Sender = openSe(IP, PORT),
   Empfaenger = openRec(MULTICAST, IP, PORT),
 
-  PidRec = spawn(fun() -> listen(LogDatei, Empfaenger, [], 0) end),
+  PidRec = spawn(fun() -> listen(LogDatei, Empfaenger, [], 0) end),  %%Prozess lauschen starten
   gen_udp:controlling_process(Empfaenger, PidRec),
   timer:exit_after(?LIFETIME, PidRec, "Timeout Receiver erreicht!\n"),
   timer:apply_after(?LIFETIME, gen_udp, close, [Empfaenger]),
 
 
-  PidSend = spawn(fun() -> sender(LogDatei, Sender, MULTICAST, PORT, -1) end),
+  PidSend = spawn(fun() -> sender(LogDatei, Sender, MULTICAST, PORT, -1) end),  %%Prozess senden starten
   gen_udp:controlling_process(Sender, PidSend),
   timer:exit_after(?LIFETIME, PidSend, "Timeout Sender erreicht!\n"),
   timer:apply_after(?LIFETIME, gen_udp, close, [Sender]),
@@ -43,12 +44,14 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
   Record = #data{slot = random:uniform(25) - 1, nextSlot = random:uniform(25) - 1, clockType = atom_to_list(ClockType), timeBalance = 0, delay = list_to_integer(atom_to_list(Delay))},
   {ok, Record}.
 
+
+%% Frame lauschen
 listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   ClockType = gen_server:call(?MODULE, {get_clockType}),
-  {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),
+  {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
-  {_StationName, _Data, StationClass, SlotNumber, Time} = decomposeMessage(Packet),
+  {_StationName, _Data, StationClass, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten 
 
 
   if ClockType =:= "B" ->
@@ -58,37 +61,39 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
       true
   end,
 
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),
+  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen ?
 
-  Frame = now_milli() / 1000,
-  if 0.0 > (Frame - trunc(Frame)) ->
+  Frame = now_milli() / ?THOUSAND, %%aktuellen Frame feststellen
+
+  %%guckt das hier nach, in welchem Frame wir sind, sodass wir schon für den naechsten Frame, der dann unten NewFrame heisst, einen Slot waehlen?
+  if 0.0 > (Frame - trunc(Frame)) ->  %%heisst das, aktueller Frame schon vorbei?? weil 0.0 > 
     NowFrame = trunc(Frame) - 1;
     true ->
       NowFrame = trunc(Frame) end,
 
-  if NowFrame > FrameNr ->
-    NewFrame = NowFrame,
-    NewBookedSlots = lists:append([SlotNumber], []),
-    gen_server:call(?MODULE, {set_slot, NextSlot}),
+  if NowFrame > FrameNr ->   %% wenn aktuelle Frame NACH dem im Paket angegebenen ist
+    NewFrame = NowFrame,    %%naechster Frame
+    NewBookedSlots = lists:append([SlotNumber], []),  %% Slotnummer, die im Packet stand, in Liste eintragen
+    gen_server:call(?MODULE, {set_slot, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
     random:seed(erlang:now()),
     Slot = random:uniform(25) - 1,
-    gen_server:call(?MODULE, {set_nextSlot, Slot});
+    gen_server:call(?MODULE, {set_nextSlot, Slot});  %%naechsten Slot weitergeben, um ins record zuschreiben?
     true ->
-      NewFrame = FrameNr,
-      NewBookedSlots = lists:append([SlotNumber], BookedSlots),
-      Slot = NextSlot
+      NewFrame = FrameNr,  %%auf aktuellen Frame wechseln
+      NewBookedSlots = lists:append([SlotNumber], BookedSlots), %%Slotnummer des aktuellen Frames in Liste der gebuchten eintragen
+      Slot = NextSlot  %%neuen Slot als naecshten markieren, um beim nächsten Durchlauf in Record zu schreiben (z.80)
   end,
 
-  Res = (lists:any(fun(X) -> X =:= Slot end, NewBookedSlots)),
+  Res = (lists:any(fun(X) -> X =:= Slot end, NewBookedSlots)),  %%ist Slot fuer next Frame schon in liste der neuen gebuchten?
 
-  if Res ->
-    NewList = ?SLOTLIST -- NewBookedSlots,
+  if Res ->  %%wenn Slot schon belegt
+    NewList = ?SLOTLIST -- NewBookedSlots,  %%neue liste mit allen freien slots erstellen
     random:seed(erlang:now()),
-    if length(NewList) > 0 ->
-      NewSlot = lists:nth(random:uniform(length(NewList)), NewList);
+    if length(NewList) > 0 -> %%wenn liste nicht leer
+      NewSlot = lists:nth(random:uniform(length(NewList)), NewList);  %%neuen slot aus freien waehlen
       true -> NewSlot = Slot
     end,
-    gen_server:call(?MODULE, {set_nextSlot, NewSlot});
+    gen_server:call(?MODULE, {set_nextSlot, NewSlot});  
     true -> true
 
   end,
@@ -102,15 +107,15 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
     Time = now_milli(),
 
 % Wie lange müssen wir noch warten, bis der Frame zu Ende ist
-    Frame = trunc(Time / 1000),
-    TimeToSleep = 1000 - (Time - (Frame * 1000)),
-    timer:sleep(TimeToSleep + 1000),
+    Frame = trunc(Time / ?THOUSAND),
+    TimeToSleep = ?THOUSAND - (Time - (Frame * ?THOUSAND)),
+    timer:sleep(TimeToSleep + ?THOUSAND),
 
     RSlot = gen_server:call(?MODULE, {get_nextSlot});
     true ->
       Time = now_milli(),
-      Frame = trunc(Time / 1000),
-      TimeToSleep = 1000 - (Time - (Frame * 1000)),
+      Frame = trunc(Time / ?THOUSAND),
+      TimeToSleep = ?THOUSAND - (Time - (Frame * ?THOUSAND)),
       timer:sleep(TimeToSleep),
       RSlot = Slot
   end,
@@ -126,7 +131,7 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
   sender(LogDatei, Socket, Addr, Port, NextSlot).
 
 
-syncBTime(StationClass, Time, ArriveTime) ->
+ >
   if StationClass =:= "A" ->
     CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
     TimeBal = Time - ArriveTime + CurrTimeBal,
@@ -164,7 +169,7 @@ openRec(MultiCast, Addr, Port) ->
 now_milli() ->
   {TimeDelay, TimeBal} = gen_server:call(?MODULE, {get_delayTimes}),
   {MegaSecs, Secs, MicroSecs} = erlang:now(),
-  trunc(((MegaSecs * 1000000 + Secs) * 1000000 + MicroSecs) / 1000)
+  trunc(((MegaSecs * 1000000 + Secs) * 1000000 + MicroSecs) / ?THOUSAND)
     + TimeBal
     + TimeDelay
 .
