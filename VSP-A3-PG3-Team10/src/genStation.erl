@@ -62,7 +62,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
       true
   end,
 
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen ?
+  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen 
 
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
@@ -77,11 +77,11 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
     NewBookedSlots = lists:append([SlotNumber], []),  %% Slotnummer, die im Packet stand, in Liste eintragen
     gen_server:call(?MODULE, {set_slot, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
     random:seed(erlang:now()),
-    Slot = random:uniform(25) - 1,
-    gen_server:call(?MODULE, {set_nextSlot, Slot});  %%naechsten Slot weitergeben, um ins record zuschreiben?
+    Slot = random:uniform(25) - 1,        %%Slot zufaellig auswaehlen, in dem wir im naechsten frame senden wollen
+    gen_server:call(?MODULE, {set_nextSlot, Slot});  
     true ->
-      NewFrame = FrameNr,  %%auf aktuellen Frame wechseln
-      NewBookedSlots = lists:append([SlotNumber], BookedSlots), %%Slotnummer des aktuellen Frames in Liste der gebuchten eintragen
+      NewFrame = FrameNr,  %%naechster Frame
+      NewBookedSlots = lists:append([SlotNumber], BookedSlots), %%Slotnummer fuer naechsten Frame in Liste der gebuchten eintragen
       Slot = NextSlot  %%neuen Slot als naecshten markieren, um beim nächsten Durchlauf in Record zu schreiben (z.80)
   end,
 
