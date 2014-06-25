@@ -6,7 +6,8 @@
 -define(ATIMECHANGE, 1).
 -define(ATIMETOLERANCE, 2).
 -define(TTL, 1).
--define(THOUSAND, 1000).
+-define(MILLISECOND_TO_SECONDS_FACTOR, 1000).
+-define(MICROSECOND_TO_SECONDS_FACTOR, 1000000).
 
 %Functions needed by gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -63,7 +64,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
 
   NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen ?
 
-  Frame = now_milli() / ?THOUSAND, %%aktuellen Frame feststellen
+  Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
   %%guckt das hier nach, in welchem Frame wir sind, sodass wir schon für den naechsten Frame, der dann unten NewFrame heisst, einen Slot waehlen?
   if 0.0 > (Frame - trunc(Frame)) ->  %%heisst das, aktueller Frame schon vorbei?? weil 0.0 > 
@@ -107,15 +108,15 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
     Time = now_milli(),
 
 % Wie lange müssen wir noch warten, bis der Frame zu Ende ist
-    Frame = trunc(Time / ?THOUSAND),
-    TimeToSleep = ?THOUSAND - (Time - (Frame * ?THOUSAND)),
-    timer:sleep(TimeToSleep + ?THOUSAND),
+    Frame = trunc(Time / ?MILLISECOND_TO_SECONDS_FACTOR),
+    TimeToSleep = ?MILLISECOND_TO_SECONDS_FACTOR - (Time - (Frame * ?MILLISECOND_TO_SECONDS_FACTOR)),
+    timer:sleep(TimeToSleep + ?MILLISECOND_TO_SECONDS_FACTOR),
 
     RSlot = gen_server:call(?MODULE, {get_nextSlot});
     true ->
       Time = now_milli(),
-      Frame = trunc(Time / ?THOUSAND),
-      TimeToSleep = ?THOUSAND - (Time - (Frame * ?THOUSAND)),
+      Frame = trunc(Time / ?MILLISECOND_TO_SECONDS_FACTOR),
+      TimeToSleep = ?MILLISECOND_TO_SECONDS_FACTOR - (Time - (Frame * ?MILLISECOND_TO_SECONDS_FACTOR)),
       timer:sleep(TimeToSleep),
       RSlot = Slot
   end,
@@ -131,7 +132,7 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
   sender(LogDatei, Socket, Addr, Port, NextSlot).
 
 
- >
+syncBTime(StationClass, Time, ArriveTime) ->
   if StationClass =:= "A" ->
     CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
     TimeBal = Time - ArriveTime + CurrTimeBal,
@@ -169,7 +170,7 @@ openRec(MultiCast, Addr, Port) ->
 now_milli() ->
   {TimeDelay, TimeBal} = gen_server:call(?MODULE, {get_delayTimes}),
   {MegaSecs, Secs, MicroSecs} = erlang:now(),
-  trunc(((MegaSecs * 1000000 + Secs) * 1000000 + MicroSecs) / ?THOUSAND)
+  trunc(((MegaSecs * ?MICROSECOND_TO_SECONDS_FACTOR + Secs) * ?MICROSECOND_TO_SECONDS_FACTOR + MicroSecs) / ?MILLISECOND_TO_SECONDS_FACTOR)
     + TimeBal
     + TimeDelay
 .
