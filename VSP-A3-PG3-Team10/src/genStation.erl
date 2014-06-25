@@ -25,7 +25,6 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
   PORT = list_to_integer(atom_to_list(PortNr)),
   dataSave:startLink(),
   LogDatei = lists:concat(["genStation.log"]),
-
   Sender = openSe(IP, PORT),
   Empfaenger = openRec(MULTICAST, IP, PORT),
 
@@ -67,7 +66,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
   %%guckt das hier nach, in welchem Frame wir sind, sodass wir schon für den naechsten Frame, der dann unten NewFrame heisst, einen Slot waehlen?
-  if 0.0 > (Frame - trunc(Frame)) ->  %%heisst das, aktueller Frame schon vorbei?? weil 0.0 > 
+  if 0.0 > (Frame - trunc(Frame)) ->  %%Wenn Frame angefangen hat
     NowFrame = trunc(Frame) - 1;
     true ->
       NowFrame = trunc(Frame) end,
