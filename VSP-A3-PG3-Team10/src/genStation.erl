@@ -52,7 +52,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
-  {_StationName, _Data, StationClass, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten 
+  {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
 
 
   if ClockType =:= "B" ->
@@ -191,7 +191,7 @@ decomposeMessage(Package) ->
   StationName = binary_to_list(BinStationName),
   Data = binary_to_list(BinData),
   StationClass = bitstring_to_list(BinStationClass),
-  {StationName, Data, StationClass, SlotNumber, Time}.
+  {StationClass, StationName, Data, SlotNumber, Time}.
 
 
 
