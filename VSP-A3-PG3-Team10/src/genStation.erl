@@ -55,14 +55,14 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
 
 
-  if ClockType =:= "B" ->
+  if ClockType =:= "B" -> %% Uhr synchronisieren.
     syncBTime(StationClass, Time, ArriveTime);
     true ->
       syncATime(StationClass, Time, ArriveTime),
       true
   end,
 
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen ?
+  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen
 
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
