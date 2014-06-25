@@ -52,7 +52,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
 
   ArriveTime = now_milli(),
   {StationClass, _StationName, _Data, SlotNumber, Time} = decomposeMessage(Packet),  %%Paketdaten
-
+%%   io:format("~nNachricht ~p von ~p erhalten", [lists:flatten(Data), StationName]),
 
   if ClockType =:= "B" -> %% Uhr synchronisieren.
     syncBTime(StationClass, Time, ArriveTime);
@@ -61,7 +61,6 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
       true
   end,
 
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen 
   NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen
 
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
