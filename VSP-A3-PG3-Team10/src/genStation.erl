@@ -67,8 +67,8 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
   %%guckt das hier nach, in welchem Frame wir sind, sodass wir schon für den naechsten Frame, der dann unten NewFrame heisst, einen Slot waehlen?
-  if 0.0 > (Frame - trunc(Frame)) ->  %%heisst das, aktueller Frame schon vorbei?? weil 0.0 > 
-    NowFrame = trunc(Frame) - 1;
+  if 0.0 > (Frame - trunc(Frame)) ->  
+    NowFrame = trunc(Frame) - 1;   %%aktuellen Frame setzen
     true ->
       NowFrame = trunc(Frame) end,
 
@@ -135,6 +135,7 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
 syncBTime(StationClass, Time, ArriveTime) ->
   if StationClass =:= "A" ->
     CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
+    %% 
     TimeBal = Time - ArriveTime + CurrTimeBal,
     gen_server:call(?MODULE, {set_timeBal, TimeBal});
     true -> true
@@ -145,11 +146,12 @@ syncATime(StationClass, Time, ArriveTime) ->
   if StationClass =:= "A" ->
     CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
 %ArriveTime = CurrTimeBal+ArriveTimeWBal,
-    if (Time - ArriveTime) > ?ATIMETOLERANCE ->
+   %%  Time= 7,2 -  5,0 = 2,2  Arrive time liegt VOR Sendezeit
+    if (Time - ArriveTime) > ?ATIMETOLERANCE ->  %%unsere Zeit geht nach
       gen_server:call(?MODULE, {set_timeBal, CurrTimeBal + ?ATIMECHANGE});
 
-
-      (ArriveTime - Time) > ?ATIMETOLERANCE ->
+    %% 7,3  -  5,1 = 2,2    Paket kam sehr spaet an, groesser tolerance. uhrzeit des senders frueher
+      (ArriveTime - Time) > ?ATIMETOLERANCE ->    %%unsere Zeit geht vor
         gen_server:call(?MODULE, {set_timeBal, CurrTimeBal - ?ATIMECHANGE});
       true -> true
     end;
