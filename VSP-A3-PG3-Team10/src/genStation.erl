@@ -178,12 +178,12 @@ composeMessage(NextSlot) ->
   Data = list_to_binary(dataSave:getData()),
   StationType = list_to_bitstring(gen_server:call(?MODULE, {get_clockType})),
   Time = now_milli(),
-  <<Data:24/binary, StationType:8/bitstring, NextSlot:8/integer, Time:64 / integer - big>>.
+  <<StationType:8/bitstring, Data:24/binary, NextSlot:8/integer, Time:64 / integer - big>>.
 
 decomposeMessage(Package) ->
-  <<BinStationName:10/binary,
+  <<BinStationClass:8/bitstring,
+  BinStationName:10/binary,
   BinData:14/binary,
-  BinStationClass:8/bitstring,
   SlotNumber:8/integer,
   Time:64 / integer - big>> = Package,
 
