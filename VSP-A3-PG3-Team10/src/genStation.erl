@@ -3,8 +3,8 @@
 -behaviour(gen_server).
 -define(LIFETIME, 3333330000).
 -define(SLOTLIST, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]).
--define(ATIMECHANGE, 1).
--define(ATIMETOLERANCE, 2).
+-define(A_TYPE_TIME_CHANGE_STEP, 1).
+-define(A_TYPE_TIME_TOLERANCE, 2).
 -define(TTL, 1).
 -define(MILLISECOND_TO_SECONDS_FACTOR, 1000).
 -define(MICROSECOND_TO_SECONDS_FACTOR, 1000000).
@@ -155,12 +155,12 @@ syncATime(StationClass, Time, ArriveTime) ->
     CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
 %ArriveTime = CurrTimeBal+ArriveTimeWBal,
    %%  Time= 7,2 -  5,0 = 2,2  Arrive time liegt VOR Sendezeit
-    if (Time - ArriveTime) > ?ATIMETOLERANCE ->  %%unsere Zeit geht nach
-      gen_server:call(?MODULE, {set_timeBal, CurrTimeBal + ?ATIMECHANGE});
+    if (Time - ArriveTime) > ?A_TYPE_TIME_TOLERANCE ->  %%unsere Zeit geht nach
+      gen_server:call(?MODULE, {set_timeBal, CurrTimeBal + ?A_TYPE_TIME_CHANGE_STEP});
 
     %% 7,3  -  5,1 = 2,2    Paket kam sehr spaet an, groesser tolerance. uhrzeit des senders frueher
-      (ArriveTime - Time) > ?ATIMETOLERANCE ->    %%unsere Zeit geht vor
-        gen_server:call(?MODULE, {set_timeBal, CurrTimeBal - ?ATIMECHANGE});
+      (ArriveTime - Time) > ?A_TYPE_TIME_TOLERANCE ->    %%unsere Zeit geht vor
+        gen_server:call(?MODULE, {set_timeBal, CurrTimeBal - ?A_TYPE_TIME_CHANGE_STEP});
       true -> true
     end;
     true -> true
