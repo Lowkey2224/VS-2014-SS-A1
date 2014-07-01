@@ -9,6 +9,11 @@
 -define(MILLISECOND_TO_SECONDS_FACTOR, 1000).
 -define(MICROSECOND_TO_SECONDS_FACTOR, 1000000).
 -define(SENDER_LOG, logFileSender).
+-define(DICT_SLOT, slot).
+-define(DICT_NEXT_SLOT, nextSlot).
+-define(DICT_CLOCK_TYPE, clockType).
+-define(DICT_TIME_BALANCE, timeBalance).
+-define(DICT_DELAY, delay).
 
 %Functions needed by gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -42,8 +47,12 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
 
   random:seed(now()),
   werkzeug:logging(LogDatei, "Station started\n"),
-  Record = #data{slot = random:uniform(25) - 1, nextSlot = random:uniform(25) - 1, clockType = atom_to_list(ClockType), timeBalance = 0, delay = list_to_integer(atom_to_list(Delay))},
-  {ok, Record}.
+  State = dict:store(?DICT_SLOT, random:uniform(25),
+    dict:store(?DICT_NEXT_SLOT, random:uniform(25),
+      dict:store(?DICT_CLOCK_TYPE, atom_to_list(ClockType),
+        dict:store(?DICT_TIME_BALANCE, 0,
+          dict:store(?DICT_DELAY, list_to_integer(atom_to_list(Delay)), dict:new()))))),
+  {ok, State}.
 
 
 %% Frame lauschen
@@ -205,32 +214,32 @@ decomposeMessage(Package) ->
 
 
 
-handle_call({get_slot}, _From, DataRecord) ->
-  {reply, DataRecord#data.slot, DataRecord};
+handle_call({get_slot}, _From, State) ->
+  {reply, dict:fetch(?DICT_SLOT, State), State};
 
-handle_call({set_slot, Slot}, _From, DataRecord) ->
-  {reply, {ok}, DataRecord#data{slot = Slot}};
+handle_call({set_slot, Slot}, _From, State) ->
+  {reply, {ok}, dict:store(?DICT_SLOT, Slot, State)};
 
-handle_call({get_nextSlot}, _From, DataRecord) ->
-  {reply, DataRecord#data.nextSlot, DataRecord};
+handle_call({get_nextSlot}, _From, State) ->
+  {reply, dict:fetch(?DICT_NEXT_SLOT, State), State};
 
-handle_call({set_nextSlot, Slot}, _From, DataRecord) ->
-  {reply, {ok}, DataRecord#data{nextSlot = Slot}};
+handle_call({set_nextSlot, Slot}, _From, State) ->
+  {reply, {ok}, dict:store(?DICT_NEXT_SLOT, Slot, State)};
 
-handle_call({get_timeBal}, _From, DataRecord) ->
-  {reply, DataRecord#data.timeBalance, DataRecord};
+handle_call({get_timeBal}, _From, State) ->
+  {reply, dict:fetch(?DICT_TIME_BALANCE, State), State};
 
-handle_call({set_timeBal, Time}, _From, DataRecord) ->
-  {reply, {ok}, DataRecord#data{timeBalance = Time}};
+handle_call({set_timeBal, Time}, _From, State) ->
+  {reply, {ok}, dict:store(?DICT_TIME_BALANCE, Time, State)};
 
-handle_call({get_delay}, _From, DataRecord) ->
-  {reply, DataRecord#data.delay, DataRecord};
+handle_call({get_delay}, _From, State) ->
+  {reply, dict:fetch(?DICT_DELAY, State), State};
 
-handle_call({get_delayTimes}, _From, DataRecord) ->
-  {reply, {DataRecord#data.delay, DataRecord#data.timeBalance}, DataRecord};
+handle_call({get_delayTimes}, _From, State) ->
+  {reply, dict:fetch(?DICT_DELAY, State), dict:fetch(?DICT_TIME_BALANCE, State), State};
 
-handle_call({get_clockType}, _From, DataRecord) ->
-  {reply, DataRecord#data.clockType, DataRecord}.
+handle_call({get_clockType}, _From, State) ->
+  {reply, dict:fetch(?DICT_CLOCK_TYPE, State), State}.
 
 %% stop() ->
 %%   gen_server:cast(?MODULE, stop).
