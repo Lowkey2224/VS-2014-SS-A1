@@ -133,14 +133,8 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
 
 
 
-
-%%   %% Zeitdifferenz zwischen dem wirklichen Frameanfang und dem gewarteten Anfang
-%% Slotnummern von 0-24
-%%   timer:sleep((RSlot * 40 + 10)),
-%% Slotnummern von 1-25
-
+%% Zeit berechnen bis unser Slot dran ist.
   SleepDuration =(RSlot-1) * 40 + 10,
-%%   werkzeug:logging(?SENDER_LOG, io:format("~nDuration ~p bei Slot ~p ~n", [SleepDuration, RSlot])),
   timer:sleep(SleepDuration),
   NextSlot = gen_server:call(?MODULE, {get_nextSlot}),
 
@@ -149,27 +143,26 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
   sender(LogDatei, Socket, Addr, Port, NextSlot).
 
 
-syncBTime(StationClass, Time, ArriveTime) ->
+syncBTime(StationClass, PackageTime, ArriveTime) ->
   if StationClass =:= "A" ->
-    CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
+    CurrTimeBal = gen_server:call(?MODULE, {get_timeBalance}),
     %% 
-    TimeBal = Time - ArriveTime + CurrTimeBal,
-    gen_server:call(?MODULE, {set_timeBal, TimeBal});
+    TimeBal = PackageTime - ArriveTime + CurrTimeBal,
+    gen_server:call(?MODULE, {set_timeBalance, TimeBal});
     true -> true
   end,
   true.
 
-syncATime(StationClass, Time, ArriveTime) ->
+syncATime(StationClass, PackageTime, ArriveTime) ->
   if StationClass =:= "A" ->
-    CurrTimeBal = gen_server:call(?MODULE, {get_timeBal}),
-%ArriveTime = CurrTimeBal+ArriveTimeWBal,
+    CurrTimeBal = gen_server:call(?MODULE, {get_timeBalance}),
    %%  Time= 7,2 -  5,0 = 2,2  Arrive time liegt VOR Sendezeit
-    if (Time - ArriveTime) > ?A_TYPE_TIME_TOLERANCE ->  %%unsere Zeit geht nach
-      gen_server:call(?MODULE, {set_timeBal, CurrTimeBal + ?A_TYPE_TIME_CHANGE_STEP});
+    if (PackageTime - ArriveTime) > ?A_TYPE_TIME_TOLERANCE ->  %%unsere Zeit geht nach
+      gen_server:call(?MODULE, {set_timeBalance, CurrTimeBal + ?A_TYPE_TIME_CHANGE_STEP});
 
     %% 7,3  -  5,1 = 2,2    Paket kam sehr spaet an, groesser tolerance. uhrzeit des senders frueher
-      (ArriveTime - Time) > ?A_TYPE_TIME_TOLERANCE ->    %%unsere Zeit geht vor
-        gen_server:call(?MODULE, {set_timeBal, CurrTimeBal - ?A_TYPE_TIME_CHANGE_STEP});
+      (ArriveTime - PackageTime) > ?A_TYPE_TIME_TOLERANCE ->    %%unsere Zeit geht vor
+        gen_server:call(?MODULE, {set_timeBalance, CurrTimeBal - ?A_TYPE_TIME_CHANGE_STEP});
       true -> true
     end;
     true -> true
@@ -226,10 +219,10 @@ handle_call({get_nextSlot}, _From, State) ->
 handle_call({set_nextSlot, Slot}, _From, State) ->
   {reply, {ok}, dict:store(?DICT_NEXT_SLOT, Slot, State)};
 
-handle_call({get_timeBal}, _From, State) ->
+handle_call({get_timeBalance}, _From, State) ->
   {reply, dict:fetch(?DICT_TIME_BALANCE, State), State};
 
-handle_call({set_timeBal, Time}, _From, State) ->
+handle_call({set_timeBalance, Time}, _From, State) ->
   {reply, {ok}, dict:store(?DICT_TIME_BALANCE, Time, State)};
 
 handle_call({get_delay}, _From, State) ->
