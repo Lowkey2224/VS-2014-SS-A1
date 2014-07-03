@@ -81,7 +81,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
     true ->
       NowFrame = trunc(Frame) end,
 
-  if NowFrame > FrameNr ->   %% wenn aktuelle Frame NACH dem im Paket angegebenen ist
+  if NowFrame > FrameNr ->   %% wenn ein neuer Frame angefangen hat
     NewFrame = NowFrame,    %%naechster Frame
     NewBookedSlots = lists:append([SlotNumber], []),  %% Slotnummer, die im Packet stand, in Liste eintragen
     gen_server:call(?MODULE, {set_slot, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
