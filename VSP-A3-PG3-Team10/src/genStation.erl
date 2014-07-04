@@ -14,6 +14,15 @@
 -define(DICT_CLOCK_TYPE, clockType).
 -define(DICT_TIME_BALANCE, timeBalance).
 -define(DICT_DELAY, delay).
+-define(MSG_GET_CLOCK_TYPE, getClockType).
+-define(MSG_GET_DELAY_TIMES, getDelayTimes).
+-define(MSG_GET_DELAY, getDelay).
+-define(MSG_SET_TIMEBALANCE, setTimebalance).
+-define(MSG_GET_TIMEBALANCE, getTimebalance).
+-define(MSG_SET_NEXT_SLOT, setNextSlot).
+-define(MSG_GET_NEXT_SLOT, getNextSlot).
+-define(MSG_SET_SLOT, setSlot).
+-define(MSG_GET_SLOT, getSlot).
 
 %Functions needed by gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -57,7 +66,7 @@ init([Delay, ClockType, Addr, Multi, PortNr]) ->
 
 %% Frame lauschen
 listen(LogDatei, Socket, BookedSlots, FrameNr) ->
-  ClockType = gen_server:call(?MODULE, {get_clockType}),
+  ClockType = gen_server:call(?MODULE, {?MSG_GET_CLOCK_TYPE}),
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),  %%Paket annehmen
 
   ArriveTime = now_milli(),
@@ -71,7 +80,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
       true
   end,
 
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),  %%call an station, Slot raussuchen
+  NextSlot = gen_server:call(?MODULE, {?MSG_GET_NEXT_SLOT}),  %%call an station, Slot raussuchen
 
   Frame = now_milli() / ?MILLISECOND_TO_SECONDS_FACTOR, %%aktuellen Frame feststellen
 
@@ -84,10 +93,10 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
   if NowFrame > FrameNr ->   %% wenn ein neuer Frame angefangen hat
     NewFrame = NowFrame,    %%naechster Frame
     NewBookedSlots = lists:append([SlotNumber], []),  %% Slotnummer, die im Packet stand, in Liste eintragen
-    gen_server:call(?MODULE, {set_slot, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
+    gen_server:call(?MODULE, {?MSG_SET_SLOT, NextSlot}),   %%naechsten Slot fuer nächsten Frame eintragen
     random:seed(erlang:now()),
     Slot = random:uniform(25),        %%Slot zufaellig auswaehlen, in dem wir im naechsten frame senden wollen
-    gen_server:call(?MODULE, {set_nextSlot, Slot});  
+    gen_server:call(?MODULE, {?MSG_SET_NEXT_SLOT, Slot});  
     true ->
       NewFrame = FrameNr,  %%naechster Frame
       NewBookedSlots = lists:append([SlotNumber], BookedSlots), %%Slotnummer fuer naechsten Frame in Liste der gebuchten eintragen
@@ -103,7 +112,7 @@ listen(LogDatei, Socket, BookedSlots, FrameNr) ->
       NewSlot = lists:nth(random:uniform(length(NewList)), NewList);  %%neuen slot aus freien waehlen
       true -> NewSlot = Slot
     end,
-    gen_server:call(?MODULE, {set_nextSlot, NewSlot});  
+    gen_server:call(?MODULE, {?MSG_SET_NEXT_SLOT, NewSlot});  
     true -> true
 
   end,
@@ -121,7 +130,7 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
     TimeToSleep = ?MILLISECOND_TO_SECONDS_FACTOR - (Time - (Frame * ?MILLISECOND_TO_SECONDS_FACTOR)),
     timer:sleep(TimeToSleep + ?MILLISECOND_TO_SECONDS_FACTOR),
 
-    RSlot = gen_server:call(?MODULE, {get_nextSlot});
+    RSlot = gen_server:call(?MODULE, {?MSG_GET_NEXT_SLOT});
     true ->
       Time = now_milli(),
       Frame = trunc(Time / ?MILLISECOND_TO_SECONDS_FACTOR),
@@ -136,7 +145,7 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
 %% Zeit berechnen bis unser Slot dran ist.
   SleepDuration =(RSlot-1) * 40 + 10,
   timer:sleep(SleepDuration),
-  NextSlot = gen_server:call(?MODULE, {get_nextSlot}),
+  NextSlot = gen_server:call(?MODULE, {?MSG_GET_NEXT_SLOT}),
 
   gen_udp:send(Socket, Addr, Port, composeMessage(NextSlot)),
 
@@ -145,24 +154,24 @@ sender(LogDatei, Socket, Addr, Port, Slot) ->
 
 syncBTime(StationClass, PackageTime, ArriveTime) ->
   if StationClass =:= "A" ->
-    CurrTimeBal = gen_server:call(?MODULE, {get_timeBalance}),
+    CurrTimeBal = gen_server:call(?MODULE, {?MSG_GET_TIMEBALANCE}),
     %% 
     TimeBal = PackageTime - ArriveTime + CurrTimeBal,
-    gen_server:call(?MODULE, {set_timeBalance, TimeBal});
+    gen_server:call(?MODULE, {?MSG_SET_TIMEBALANCE, TimeBal});
     true -> true
   end,
   true.
 
 syncATime(StationClass, PackageTime, ArriveTime) ->
   if StationClass =:= "A" ->
-    CurrTimeBal = gen_server:call(?MODULE, {get_timeBalance}),
+    CurrTimeBal = gen_server:call(?MODULE, {?MSG_GET_TIMEBALANCE}),
    %%  Time= 7,2 -  5,0 = 2,2  Arrive time liegt VOR Sendezeit
     if (PackageTime - ArriveTime) > ?A_TYPE_TIME_TOLERANCE ->  %%unsere Zeit geht nach
-      gen_server:call(?MODULE, {set_timeBalance, CurrTimeBal + ?A_TYPE_TIME_CHANGE_STEP});
+      gen_server:call(?MODULE, {?MSG_SET_TIMEBALANCE, CurrTimeBal + ?A_TYPE_TIME_CHANGE_STEP});
 
     %% 7,3  -  5,1 = 2,2    Paket kam sehr spaet an, groesser tolerance. uhrzeit des senders frueher
       (ArriveTime - PackageTime) > ?A_TYPE_TIME_TOLERANCE ->    %%unsere Zeit geht vor
-        gen_server:call(?MODULE, {set_timeBalance, CurrTimeBal - ?A_TYPE_TIME_CHANGE_STEP});
+        gen_server:call(?MODULE, {?MSG_SET_TIMEBALANCE, CurrTimeBal - ?A_TYPE_TIME_CHANGE_STEP});
       true -> true
     end;
     true -> true
@@ -180,7 +189,7 @@ openRec(MultiCast, Addr, Port) ->
   Socket.
 
 now_milli() ->
-  {TimeDelay, TimeBal} = gen_server:call(?MODULE, {get_delayTimes}),
+  {TimeDelay, TimeBal} = gen_server:call(?MODULE, {?MSG_GET_DELAY_TIMES}),
   {MegaSecs, Secs, MicroSecs} = erlang:now(),
   trunc(((MegaSecs * ?MICROSECOND_TO_SECONDS_FACTOR + Secs) * ?MICROSECOND_TO_SECONDS_FACTOR + MicroSecs) / ?MILLISECOND_TO_SECONDS_FACTOR)
     + TimeBal
@@ -189,7 +198,7 @@ now_milli() ->
 
 composeMessage(NextSlot) ->
   Data = list_to_binary(dataSave:getData()),
-  StationType = list_to_bitstring(gen_server:call(?MODULE, {get_clockType})),
+  StationType = list_to_bitstring(gen_server:call(?MODULE, {?MSG_GET_CLOCK_TYPE})),
   Time = now_milli(),
   <<StationType:8/bitstring, Data:24/binary, NextSlot:8/integer, Time:64 / integer - big>>.
 
@@ -207,31 +216,31 @@ decomposeMessage(Package) ->
 
 
 
-handle_call({get_slot}, _From, State) ->
+handle_call({?MSG_GET_SLOT}, _From, State) ->
   {reply, dict:fetch(?DICT_SLOT, State), State};
 
-handle_call({set_slot, Slot}, _From, State) ->
+handle_call({?MSG_SET_SLOT, Slot}, _From, State) ->
   {reply, {ok}, dict:store(?DICT_SLOT, Slot, State)};
 
-handle_call({get_nextSlot}, _From, State) ->
+handle_call({?MSG_GET_NEXT_SLOT}, _From, State) ->
   {reply, dict:fetch(?DICT_NEXT_SLOT, State), State};
 
-handle_call({set_nextSlot, Slot}, _From, State) ->
+handle_call({?MSG_SET_NEXT_SLOT, Slot}, _From, State) ->
   {reply, {ok}, dict:store(?DICT_NEXT_SLOT, Slot, State)};
 
-handle_call({get_timeBalance}, _From, State) ->
+handle_call({?MSG_GET_TIMEBALANCE}, _From, State) ->
   {reply, dict:fetch(?DICT_TIME_BALANCE, State), State};
 
-handle_call({set_timeBalance, Time}, _From, State) ->
+handle_call({?MSG_SET_TIMEBALANCE, Time}, _From, State) ->
   {reply, {ok}, dict:store(?DICT_TIME_BALANCE, Time, State)};
 
-handle_call({get_delay}, _From, State) ->
+handle_call({?MSG_GET_DELAY}, _From, State) ->
   {reply, dict:fetch(?DICT_DELAY, State), State};
 
-handle_call({get_delayTimes}, _From, State) ->
+handle_call({?MSG_GET_DELAY_TIMES}, _From, State) ->
   {reply, {dict:fetch(?DICT_DELAY, State), dict:fetch(?DICT_TIME_BALANCE, State)}, State};
 
-handle_call({get_clockType}, _From, State) ->
+handle_call({?MSG_GET_CLOCK_TYPE}, _From, State) ->
   {reply, dict:fetch(?DICT_CLOCK_TYPE, State), State}.
 
 %% stop() ->
