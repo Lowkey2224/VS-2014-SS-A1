@@ -21,7 +21,7 @@
 -export([start/1]).
 
 %Saves current data
--record(data, {slot, nextSlot, clockType, timeBalance = 0, delay = 0}).
+%% -record(data, {slot, nextSlot, clockType, timeBalance = 0, delay = 0}).
 
 start([Delay, ClockType, IP, MULTICAST, PORT]) -> gen_server:start_link({local, ?MODULE}, ?MODULE, [Delay, ClockType, IP, MULTICAST, PORT], []).
 
@@ -229,7 +229,7 @@ handle_call({get_delay}, _From, State) ->
   {reply, dict:fetch(?DICT_DELAY, State), State};
 
 handle_call({get_delayTimes}, _From, State) ->
-  {reply, dict:fetch(?DICT_DELAY, State), dict:fetch(?DICT_TIME_BALANCE, State), State};
+  {reply, {dict:fetch(?DICT_DELAY, State), dict:fetch(?DICT_TIME_BALANCE, State)}, State};
 
 handle_call({get_clockType}, _From, State) ->
   {reply, dict:fetch(?DICT_CLOCK_TYPE, State), State}.
